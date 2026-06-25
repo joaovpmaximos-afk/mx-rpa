@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MX RPA — Sistema de Recibos de Autônomo | MÁXIMOS</title>
+<style>
+:root{
+  --primary:#2c2c2c; --green:#049c74; --green-light:#05b887; --bg:#e6e7e5;
+  --branco:#fff; --cinza:#6b6f6d; --cinza-claro:#c9ccc9; --erro:#c0392b; --erro-bg:#fdecea;
+  --amarelo:#8a6d1a; --amarelo-bg:#fff7e6; --raio:14px; --sombra:0 2px 10px rgba(0,0,0,.08);
+  --sombra-forte:0 12px 40px rgba(0,0,0,.22);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{font-family:'Inter',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--primary);font-size:16px;line-height:1.45;-webkit-text-size-adjust:100%}
+h1,h2,h3,.tit{font-family:'Sora','Inter',system-ui,Arial,sans-serif}
+.hide{display:none !important}
+button{font-family:inherit}
+input,select{font-family:inherit;font-size:16px;color:var(--primary);padding:11px 12px;border:1.5px solid var(--cinza-claro);border-radius:10px;background:#fbfcfb;width:100%;outline:none;transition:border-color .15s,box-shadow .15s;-webkit-appearance:none;appearance:none}
+select{background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%236b6f6d" stroke-width="3"><path d="M6 9l6 6 6-6"/></svg>');background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+input:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(4,156,116,.15)}
+label{font-size:13px;font-weight:600;margin-bottom:5px;display:block}
+label .ob{color:var(--green);font-weight:800}
+.campo{margin-bottom:12px}
+.campo.bad input,.campo.bad select{border-color:var(--erro);background:var(--erro-bg)}
+.err{display:none;font-size:12px;color:var(--erro);margin-top:5px;font-weight:600}
+.campo.bad .err{display:block}
+.dica{font-size:11.5px;color:var(--cinza);margin-top:4px}
+.btn{font-family:'Sora',Arial,sans-serif;font-weight:700;font-size:15px;padding:12px 18px;border-radius:11px;border:none;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px}
+.btn-p{background:var(--green);color:#fff}
+.btn-p:hover{background:var(--green-light)}
+.btn-p:disabled{background:var(--cinza-claro);cursor:not-allowed}
+.btn-s{background:#eef1ef;color:var(--primary)}
+.btn-s:hover{background:#e2e6e3}
+.btn-d{background:#fff;color:var(--erro);border:1.5px solid var(--erro)}
+.btn-d:hover{background:var(--erro-bg)}
+.btn-block{width:100%}
+.btn-mini{font-size:13px;padding:7px 11px;min-height:0;border-radius:9px}
+
+/* LOGIN */
+#viewLogin{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.login-card{background:#fff;border-radius:18px;box-shadow:var(--sombra);max-width:400px;width:100%;overflow:hidden}
+.login-top{background:linear-gradient(135deg,var(--green),var(--green-light));color:#fff;padding:26px 24px}
+.login-top .marca{font-family:'Sora',Arial,sans-serif;font-weight:800;text-transform:uppercase;font-size:12px;letter-spacing:.6px;opacity:.95}
+.login-top h1{margin:6px 0 0;font-size:21px}
+.login-top p{margin:5px 0 0;font-size:13px;opacity:.92}
+.login-body{padding:22px 24px 26px}
+
+/* APP */
+#viewApp{max-width:920px;margin:0 auto;padding:0 16px 60px}
+.topo{background:linear-gradient(135deg,var(--green),var(--green-light));color:#fff;padding:16px;border-radius:0 0 var(--raio) var(--raio);box-shadow:var(--sombra);display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.topo .marca{font-family:'Sora',Arial,sans-serif;font-weight:800;font-size:13px;text-transform:uppercase;letter-spacing:.5px}
+.topo .quem{font-size:12px;opacity:.92}
+.topo .pill{background:rgba(255,255,255,.22);border-radius:20px;padding:3px 10px;font-size:12px;font-weight:700}
+.topo .sp{flex:1}
+.card{background:#fff;border-radius:var(--raio);box-shadow:var(--sombra);padding:18px;margin-top:18px}
+.barra{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+.barra .campo{margin-bottom:0}
+.barra .sp{flex:1}
+.tot{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
+.tot .b{background:#f1f4f2;border-radius:11px;padding:10px 14px;font-size:13px;color:var(--cinza)}
+.tot .b strong{display:block;font-family:'Sora',Arial,sans-serif;font-size:19px;color:var(--primary)}
+.tot .b.v strong{color:var(--green)}
+.pessoa{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid #eef0ee;border-radius:12px;margin-bottom:10px;flex-wrap:wrap}
+.pessoa .av{width:40px;height:40px;border-radius:50%;background:#e7f5f0;color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:800;font-family:'Sora',Arial;flex:none}
+.pessoa .info{flex:1;min-width:160px}
+.pessoa .nome{font-weight:700;font-size:15px;cursor:pointer}
+.pessoa .nome:hover{color:var(--green);text-decoration:underline}
+.pessoa .doc{font-size:12.5px;color:var(--cinza)}
+.tag{display:inline-block;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
+.tag.pf{background:#e7f5f0;color:var(--green)}
+.tag.pj{background:#eceaf6;color:#5b4ba0}
+.tag.ok{background:#e7f5f0;color:var(--green)}
+.tag.pend{background:var(--amarelo-bg);color:var(--amarelo)}
+.pessoa .acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.vazio{text-align:center;color:var(--cinza);padding:30px 12px}
+.icbtn{border:none;background:#f0f2f0;border-radius:9px;padding:8px 11px;cursor:pointer;font-size:14px;color:var(--primary)}
+.icbtn.del{color:var(--erro);background:var(--erro-bg)}
+.icbtn:hover{filter:brightness(.96)}
+
+/* MODAL */
+.modal{position:fixed;inset:0;background:rgba(20,22,21,.55);z-index:60;display:flex;align-items:flex-start;justify-content:center;padding:22px 14px;overflow:auto}
+.modal .box{background:#fff;border-radius:16px;max-width:640px;width:100%;box-shadow:var(--sombra-forte)}
+.modal .mh{padding:16px 20px;border-bottom:1px solid #eef0ee;display:flex;align-items:center;justify-content:space-between}
+.modal .mh h2{margin:0;font-size:18px}
+.modal .mb{padding:18px 20px}
+.modal .mf{padding:14px 20px;border-top:1px solid #eef0ee;display:flex;gap:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid2 .full{grid-column:1/-1}
+.x{background:none;border:none;font-size:20px;cursor:pointer;color:var(--cinza);line-height:1}
+
+/* banner demo + toast */
+.demo-banner{background:var(--amarelo-bg);border:1.5px solid #f0c36d;color:var(--amarelo);border-radius:11px;padding:9px 12px;font-size:13px;font-weight:600;margin-top:14px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--primary);color:#fff;padding:13px 20px;border-radius:11px;font-size:14px;font-weight:600;box-shadow:var(--sombra-forte);opacity:0;pointer-events:none;transition:.25s;z-index:90;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.erro{background:var(--erro)}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:r .7s linear infinite}
+@keyframes r{to{transform:rotate(360deg)}}
+.foot{text-align:center;font-size:12px;color:var(--cinza);margin-top:24px}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+
+/* autoteste */
+#pt{position:fixed;inset:0;background:rgba(20,22,21,.6);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto}
+#pt.on{display:flex}
+#pt .c{background:#fff;border-radius:14px;max-width:680px;width:100%;box-shadow:var(--sombra-forte);overflow:hidden}
+#pt .h{padding:16px 20px;color:#fff;font-family:'Sora',Arial;font-weight:800;display:flex;justify-content:space-between;align-items:center}
+#pt .h.ok{background:var(--green)} #pt .h.f{background:var(--erro)}
+#pt .b{max-height:64vh;overflow:auto}
+.tl{display:flex;gap:10px;padding:7px 20px;font-size:13px;border-bottom:1px solid #f0f2f0}
+.tl .s{font-weight:800;width:44px;flex:none}
+.tl.p .s{color:var(--green)} .tl.f .s{color:var(--erro)}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<div id="viewLogin">
+  <div class="login-card">
+    <div class="login-top">
+      <div class="marca">MÁXIMOS Soluções Empresariais</div>
+      <h1>Sistema de RPA</h1>
+      <p>Recibo de Pagamento a Autônomo</p>
+    </div>
+    <div class="login-body">
+      <div id="loginForm">
+        <div class="campo"><label>E-mail</label><input id="email" type="email" inputmode="email" placeholder="voce@empresa.com"></div>
+        <div class="campo"><label>Senha</label><input id="senha" type="password" placeholder="••••••••"></div>
+        <div class="err" id="loginErr" style="margin-bottom:10px"></div>
+        <button class="btn btn-p btn-block" id="btnLogin">Entrar</button>
+      </div>
+      <div id="loginDemo" class="hide">
+        <div class="demo-banner" style="margin-top:0;margin-bottom:14px">Modo demonstração — o Supabase ainda não está configurado. Os dados ficam só neste navegador. Entre para testar a interface:</div>
+        <button class="btn btn-p btn-block" id="btnDemoCli" style="margin-bottom:10px">Entrar como cliente (lança dados)</button>
+        <button class="btn btn-s btn-block" id="btnDemoEsc">Entrar como escritório (exporta)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="viewApp" class="hide">
+  <div class="topo">
+    <div>
+      <div class="marca">MÁXIMOS · MX RPA</div>
+      <div class="quem" id="quem"></div>
+    </div>
+    <div class="sp"></div>
+    <span class="pill" id="papelPill"></span>
+    <button class="btn btn-s btn-mini" id="btnSair">Sair</button>
+  </div>
+
+  <div id="demoBanner" class="demo-banner hide">Modo demonstração — dados só neste navegador. Configure o Supabase para uso real (veja o MANUAL).</div>
+
+  <div class="card">
+    <div class="barra">
+      <div class="campo"><label>Mês de referência</label><select id="selMes"></select></div>
+      <div class="campo"><label>Ano</label><select id="selAno"></select></div>
+      <div class="sp"></div>
+      <button class="btn btn-p" id="btnNovo">+ Novo autônomo</button>
+      <button class="btn btn-s hide" id="btnExportar">⬇ Exportar Excel</button>
+    </div>
+
+    <div class="tot">
+      <div class="b"><span>Autônomos cadastrados</span><strong id="totPessoas">0</strong></div>
+      <div class="b"><span>Lançados no mês</span><strong id="totLanc">0</strong></div>
+      <div class="b v"><span>Total do mês</span><strong id="totValor">R$ 0,00</strong></div>
+    </div>
+
+    <div id="lista"></div>
+  </div>
+
+  <div class="foot">MÁXIMOS Soluções Empresariais · cada autônomo é cadastrado uma vez e reaproveitado todo mês</div>
+</div>
+
+<!-- ============ MODAL CADASTRO ============ -->
+<div id="modalPessoa" class="modal hide">
+  <div class="box">
+    <div class="mh"><h2 id="mpTitulo">Novo autônomo</h2><button class="x" data-close="modalPessoa">✕</button></div>
+    <div class="mb">
+      <div class="grid2">
+        <div class="campo full" data-f="pj_pf"><label>Tipo de pessoa <span class="ob">*</span></label>
+          <select id="f_pj_pf"><option value="">Selecione...</option><option>Pessoa Física</option><option>Pessoa Jurídica</option></select><div class="err"></div></div>
+        <div class="campo full" data-f="nome"><label>Nome completo <span class="ob">*</span></label><input id="f_nome" placeholder="NOME E SOBRENOME"><div class="err"></div></div>
+        <div class="campo" data-f="documento"><label id="lblDoc">CPF <span class="ob">*</span></label><input id="f_documento" inputmode="numeric" placeholder="000.000.000-00"><div class="err"></div></div>
+        <div class="campo" data-f="telefone"><label>Telefone <span class="ob">*</span></label><input id="f_telefone" inputmode="numeric" placeholder="(00) 00000-0000"><div class="err"></div></div>
+        <div class="campo" data-f="data_nascimento"><label>Data de nascimento <span class="ob">*</span></label><input id="f_data_nascimento" inputmode="numeric" placeholder="00/00/0000"><div class="err"></div></div>
+        <div class="campo" data-f="cep"><label>CEP <span class="ob">*</span></label><input id="f_cep" inputmode="numeric" placeholder="00000-000"><div class="err"></div><div class="dica" id="dicaCep"></div></div>
+        <div class="campo" data-f="logradouro"><label>Logradouro <span class="ob">*</span></label>
+          <select id="f_logradouro"><option value="">Selecione...</option><option>Rua</option><option>Avenida</option><option>Travessa</option><option>Estrada</option><option>Praça</option><option>Alameda</option><option>Rodovia</option><option>Outro</option></select><div class="err"></div></div>
+        <div class="campo" data-f="endereco"><label>Endereço (via) <span class="ob">*</span></label><input id="f_endereco" placeholder="das Flores"><div class="err"></div></div>
+        <div class="campo" data-f="numero"><label>Número <span class="ob">*</span></label><input id="f_numero" placeholder="123 ou S/N"><div class="err"></div></div>
+        <div class="campo" data-f="bairro"><label>Bairro <span class="ob">*</span></label><input id="f_bairro" placeholder="Centro"><div class="err"></div></div>
+        <div class="campo" data-f="cidade"><label>Cidade <span class="ob">*</span></label><input id="f_cidade" placeholder="Cidade"><div class="err"></div></div>
+        <div class="campo" data-f="uf"><label>UF <span class="ob">*</span></label><select id="f_uf"><option value="">--</option></select><div class="err"></div></div>
+        <div class="campo" data-f="tipo_chave_pix"><label>Tipo de chave PIX <span class="ob">*</span></label>
+          <select id="f_tipo_chave_pix"><option value="">Selecione...</option><option>Telefone</option><option>E-mail</option><option>CPF</option><option>CNPJ</option><option>Aleatória</option></select><div class="err"></div></div>
+        <div class="campo" data-f="chave_pix"><label>Chave PIX <span class="ob">*</span></label><input id="f_chave_pix" placeholder="Selecione o tipo primeiro"><div class="err"></div></div>
+        <div class="campo full" style="border-top:1px solid #eef0ee;padding-top:12px;margin-top:2px">
+          <div style="font-family:'Sora',Arial,sans-serif;font-weight:700;font-size:14px;color:var(--green)">Trabalho do mês — <span id="cadCompLabel"></span></div>
+          <div class="dica">Dia trabalhado e valor pago a este autônomo no mês selecionado.</div>
+        </div>
+        <div class="campo" data-f="p_dia"><label>Dia trabalhado <span class="ob">*</span></label><input id="f_p_dia" inputmode="numeric" placeholder="00/00/0000"><div class="err"></div></div>
+        <div class="campo" data-f="p_valor"><label>Valor pago <span class="ob">*</span></label><input id="f_p_valor" inputmode="numeric" placeholder="R$ 0,00"><div class="err"></div></div>
+      </div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-s" data-close="modalPessoa">Cancelar</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-p" id="btnSalvarPessoa">Salvar cadastro</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL LANÇAMENTO DO MÊS ============ -->
+<div id="modalLanc" class="modal hide">
+  <div class="box" style="max-width:460px">
+    <div class="mh"><h2>Lançamento do mês</h2><button class="x" data-close="modalLanc">✕</button></div>
+    <div class="mb">
+      <p style="margin:0 0 14px;font-size:14px;color:var(--cinza)">Autônomo: <strong id="lancNome" style="color:var(--primary)"></strong><br><span id="lancComp"></span></p>
+      <div class="campo" data-f="dia_trabalhado"><label>Dia trabalhado <span class="ob">*</span></label><input id="f_dia_trabalhado" inputmode="numeric" placeholder="00/00/0000"><div class="err"></div></div>
+      <div class="campo" data-f="valor_pago"><label>Valor pago <span class="ob">*</span></label><input id="f_valor_pago" inputmode="numeric" placeholder="R$ 0,00"><div class="err"></div></div>
+    </div>
+    <div class="mf">
+      <button class="btn btn-d btn-mini hide" id="btnRemoverLanc">Remover do mês</button>
+      <div style="flex:1"></div>
+      <button class="btn btn-s" data-close="modalLanc">Cancelar</button>
+      <button class="btn btn-p" id="btnSalvarLanc">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="pt"><div class="c"><div class="h" id="ptH"><span id="ptT">Autoteste</span><button class="btn btn-mini btn-s" onclick="document.getElementById('pt').className=''">Fechar</button></div><div class="b" id="ptB"></div></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+"use strict";
+
+/* ====== CONFIGURAÇÃO — cole aqui depois de criar o projeto no Supabase ====== */
+var SUPABASE_URL = "https://kqpbxcacgxgaqqeiqpar.supabase.co";
+var SUPABASE_ANON_KEY = "sb_publishable_i-lUjpHSVkiCobtVhVt8pQ_fAKhI2kB";
+/* =========================================================================== */
+
+var DEMO = (!SUPABASE_URL || !SUPABASE_ANON_KEY) || (location.search.indexOf("demo=1") !== -1);
+var sbClient = null;
+if (!DEMO && window.supabase){ sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
+
+var UFS=["AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"];
+var DDDS=[11,12,13,14,15,16,17,18,19,21,22,24,27,28,31,32,33,34,35,37,38,41,42,43,44,45,46,47,48,49,51,53,54,55,61,62,63,64,65,66,67,68,69,71,73,74,75,77,79,81,82,83,84,85,86,87,88,89,91,92,93,94,95,96,97,98,99];
+var TIPOS_LOG=["Rua","Avenida","Travessa","Estrada","Praça","Alameda","Rodovia"];
+var MESES=["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+var CABECALHO=["NOME","CPF","TELEFONE","CEP","LOGRADOURO","ENDEREÇO","NÚMERO","BAIRRO","CIDADE","UF","DATA NASCIMENTO","DIA TRABALHADO ","VALOR PAGO","CHAVE  PIX","TIPO DE CHAVE PIX (TELEFONE, E-MAIL, CPF, ALEATÓRIA, ETC)","PJ ou PF (PESSOA FÍSICA OU PESSOA JURÍDICA)"];
+
+var $=function(id){return document.getElementById(id);};
+function soNum(s){return (s==null?"":(""+s)).replace(/\D/g,"");}
+function pad2(n){n=""+n;return n.length<2?"0"+n:n;}
+function esc(s){s=(s==null)?"":(""+s);return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+
+/* ---------- validadores ---------- */
+function validarCPF(cpf){cpf=soNum(cpf);if(cpf.length!==11)return false;if(/^(\d)\1{10}$/.test(cpf))return false;var s=0,i,r;for(i=1;i<=9;i++)s+=parseInt(cpf.substring(i-1,i),10)*(11-i);r=(s*10)%11;if(r===10||r===11)r=0;if(r!==parseInt(cpf.substring(9,10),10))return false;s=0;for(i=1;i<=10;i++)s+=parseInt(cpf.substring(i-1,i),10)*(12-i);r=(s*10)%11;if(r===10||r===11)r=0;return r===parseInt(cpf.substring(10,11),10);}
+function validarCNPJ(c){c=soNum(c);if(c.length!==14)return false;if(/^(\d)\1{13}$/.test(c))return false;var t=12,n=c.substring(0,t),d=c.substring(t),s=0,p=t-7,i,res;for(i=t;i>=1;i--){s+=parseInt(n.charAt(t-i),10)*p--;if(p<2)p=9;}res=(s%11)<2?0:11-(s%11);if(res!==parseInt(d.charAt(0),10))return false;t=13;n=c.substring(0,t);s=0;p=t-7;for(i=t;i>=1;i--){s+=parseInt(n.charAt(t-i),10)*p--;if(p<2)p=9;}res=(s%11)<2?0:11-(s%11);return res===parseInt(d.charAt(1),10);}
+function validarEmail(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(""+e);}
+function validarTelefone(t){var d=soNum(t);if(d.length!==10&&d.length!==11)return false;if(DDDS.indexOf(parseInt(d.substring(0,2),10))===-1)return false;if(d.length===11&&d.charAt(2)!=="9")return false;if(d.length===10&&"2345".indexOf(d.charAt(2))===-1)return false;return true;}
+function validarCEP(c){return soNum(c).length===8;}
+function dataValida(str){var p=(""+(str||"")).split("/");if(p.length!==3)return false;var dia=parseInt(p[0],10),m=parseInt(p[1],10),a=parseInt(p[2],10);if(isNaN(dia)||isNaN(m)||isNaN(a))return false;if(p[2].length!==4||a<1900||a>2100)return false;var d=new Date(a,m-1,dia);return d.getFullYear()===a&&d.getMonth()===m-1&&d.getDate()===dia;}
+function calcularIdade(str){if(!dataValida(str))return null;var p=str.split("/"),dia=parseInt(p[0],10),m=parseInt(p[1],10),a=parseInt(p[2],10),h=new Date(),idade=h.getFullYear()-a,dm=(h.getMonth()+1)-m;if(dm<0||(dm===0&&h.getDate()<dia))idade--;return idade;}
+function validarPix(tipo,ch){ch=""+(ch||"");if(tipo==="CPF")return validarCPF(ch);if(tipo==="CNPJ")return validarCNPJ(ch);if(tipo==="Telefone")return validarTelefone(ch);if(tipo==="E-mail")return validarEmail(ch.replace(/\s/g,""));if(tipo==="Aleatória"){var c=ch.replace(/\s/g,"");if(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(c))return true;return /^[A-Za-z0-9]{32}$/.test(c);}return false;}
+function nomeValido(n){n=(""+(n||"")).replace(/\s+/g," ").trim();return n.length>=3&&n.indexOf(" ")!==-1;}
+
+/* ---------- máscaras / moeda ---------- */
+function mCPF(v){v=soNum(v).substring(0,11);v=v.replace(/(\d{3})(\d)/,"$1.$2");v=v.replace(/(\d{3})(\d)/,"$1.$2");return v.replace(/(\d{3})(\d{1,2})$/,"$1-$2");}
+function mCNPJ(v){v=soNum(v).substring(0,14);v=v.replace(/^(\d{2})(\d)/,"$1.$2");v=v.replace(/^(\d{2})\.(\d{3})(\d)/,"$1.$2.$3");v=v.replace(/\.(\d{3})(\d)/,".$1/$2");return v.replace(/(\d{4})(\d)/,"$1-$2");}
+function mTel(v){var d=soNum(v).substring(0,11);if(!d)return"";if(d.length<=2)return"("+d;if(d.length<=6)return"("+d.substring(0,2)+") "+d.substring(2);if(d.length<=10)return"("+d.substring(0,2)+") "+d.substring(2,6)+"-"+d.substring(6);return"("+d.substring(0,2)+") "+d.substring(2,7)+"-"+d.substring(7,11);}
+function mCEP(v){var d=soNum(v).substring(0,8);return d.length<=5?d:d.substring(0,5)+"-"+d.substring(5);}
+function mData(v){var d=soNum(v).substring(0,8);if(d.length<=2)return d;if(d.length<=4)return d.substring(0,2)+"/"+d.substring(2);return d.substring(0,2)+"/"+d.substring(2,4)+"/"+d.substring(4);}
+function lerMoeda(s){var d=soNum(s);return d===""?0:parseInt(d,10)/100;}
+function fmtMoeda(n){return "R$ "+(Number(n)||0).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+/* ====================================================================
+   CAMADA DE DADOS — duas implementações com a mesma interface
+==================================================================== */
+var DemoDB={
+  _k:"mxrpa_demo_v1",
+  _l:function(){try{return JSON.parse(localStorage.getItem(this._k))||{pessoas:[],lancamentos:[]};}catch(e){return{pessoas:[],lancamentos:[]};}},
+  _s:function(d){localStorage.setItem(this._k,JSON.stringify(d));},
+  sess:null,
+  signIn:function(papel){this.sess={role:papel||"escritorio",cliente_id:"demo",nome:papel==="cliente"?"Cliente (demo)":"Escritório (demo)"};return Promise.resolve(this.sess);},
+  signOut:function(){this.sess=null;return Promise.resolve();},
+  getProfile:function(){return Promise.resolve(this.sess);},
+  listPessoas:function(){var d=this._l();return Promise.resolve(d.pessoas.filter(function(p){return p.ativo!==false;}).sort(function(a,b){return (a.nome||"").localeCompare(b.nome||"");}));},
+  savePessoa:function(p){var d=this._l();if(p.id){var i=d.pessoas.findIndex(function(x){return x.id===p.id;});if(i>=0)d.pessoas[i]=Object.assign({},d.pessoas[i],p);}else{p.id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():("p"+Date.now());p.ativo=true;d.pessoas.push(p);}this._s(d);return Promise.resolve(p);},
+  deletePessoa:function(id){var d=this._l();d.pessoas=d.pessoas.filter(function(x){return x.id!==id;});d.lancamentos=d.lancamentos.filter(function(x){return x.pessoa_id!==id;});this._s(d);return Promise.resolve();},
+  listLancamentos:function(comp){var d=this._l();return Promise.resolve(d.lancamentos.filter(function(l){return l.competencia===comp;}));},
+  saveLancamento:function(l){var d=this._l();var i=d.lancamentos.findIndex(function(x){return x.pessoa_id===l.pessoa_id&&x.competencia===l.competencia;});if(i>=0)d.lancamentos[i]=Object.assign({},d.lancamentos[i],l);else{l.id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():("l"+Date.now());d.lancamentos.push(l);}this._s(d);return Promise.resolve(l);},
+  deleteLancamento:function(pessoa_id,comp){var d=this._l();d.lancamentos=d.lancamentos.filter(function(x){return !(x.pessoa_id===pessoa_id&&x.competencia===comp);});this._s(d);return Promise.resolve();}
+};
+var SupaDB={
+  signIn:function(email,senha){return sbClient.auth.signInWithPassword({email:email,password:senha}).then(function(r){if(r.error)throw r.error;return r.data;});},
+  signOut:function(){return sbClient.auth.signOut();},
+  getProfile:function(){return sbClient.auth.getUser().then(function(r){var u=r.data&&r.data.user;if(!u)return null;return sbClient.from("profiles").select("role,cliente_id,nome").eq("id",u.id).single().then(function(pr){if(pr.error)throw pr.error;return pr.data;});});},
+  listPessoas:function(){return sbClient.from("pessoas").select("*").eq("ativo",true).order("nome").then(function(r){if(r.error)throw r.error;return r.data;});},
+  savePessoa:function(p){var row=Object.assign({},p);if(!row.cliente_id)row.cliente_id=state.profile.cliente_id;if(row.id){var id=row.id;delete row.id;return sbClient.from("pessoas").update(row).eq("id",id).select().single().then(function(r){if(r.error)throw r.error;return r.data;});}return sbClient.from("pessoas").insert(row).select().single().then(function(r){if(r.error)throw r.error;return r.data;});},
+  deletePessoa:function(id){return sbClient.from("pessoas").update({ativo:false}).eq("id",id).then(function(r){if(r.error)throw r.error;});},
+  listLancamentos:function(comp){return sbClient.from("lancamentos").select("*").eq("competencia",comp).then(function(r){if(r.error)throw r.error;return r.data;});},
+  saveLancamento:function(l){var row=Object.assign({},l);if(!row.cliente_id)row.cliente_id=state.profile.cliente_id;return sbClient.from("lancamentos").upsert(row,{onConflict:"pessoa_id,competencia"}).select().single().then(function(r){if(r.error)throw r.error;return r.data;});},
+  deleteLancamento:function(pessoa_id,comp){return sbClient.from("lancamentos").delete().eq("pessoa_id",pessoa_id).eq("competencia",comp).then(function(r){if(r.error)throw r.error;});}
+};
+var DB=DEMO?DemoDB:SupaDB;
+
+/* ====================================================================
+   ESTADO + UI
+==================================================================== */
+var state={profile:null,pessoas:[],lancamentos:[],comp:null,editId:null,lancPessoa:null};
+
+function toast(msg,erro){var t=$("toast");t.textContent=msg;t.className="show"+(erro?" erro":"");clearTimeout(toast._t);toast._t=setTimeout(function(){t.className="";},3200);}
+function compAtual(){var d=new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1);}
+function pessoaById(id){for(var i=0;i<state.pessoas.length;i++)if(state.pessoas[i].id===id)return state.pessoas[i];return null;}
+function lancByPessoa(id){for(var i=0;i<state.lancamentos.length;i++)if(state.lancamentos[i].pessoa_id===id)return state.lancamentos[i];return null;}
+
+function preencherSelects(){
+  var um=$("selMes"),ua=$("selAno"),i;
+  for(i=0;i<12;i++)um.insertAdjacentHTML("beforeend","<option value='"+pad2(i+1)+"'>"+MESES[i]+"</option>");
+  var ya=new Date().getFullYear();
+  for(i=ya-2;i<=ya+2;i++)ua.insertAdjacentHTML("beforeend","<option value='"+i+"'>"+i+"</option>");
+  var ufs=$("f_uf");for(i=0;i<UFS.length;i++)ufs.insertAdjacentHTML("beforeend","<option>"+UFS[i]+"</option>");
+  var c=compAtual().split("-");ua.value=c[0];um.value=c[1];
+}
+
+function setComp(){state.comp=$("selAno").value+"-"+$("selMes").value;}
+
+function carregar(){
+  setComp();
+  return Promise.all([DB.listPessoas(),DB.listLancamentos(state.comp)]).then(function(res){
+    state.pessoas=res[0]||[];state.lancamentos=res[1]||[];renderLista();
+  }).catch(function(e){toast("Erro ao carregar: "+(e.message||e),true);});
+}
+
+function renderLista(){
+  var box=$("lista"),html="",soma=0,lanc=0,i;
+  state.pessoas.forEach(function(p){
+    var l=lancByPessoa(p.id),pj=(p.pj_pf==="Pessoa Jurídica");
+    var ini=(p.nome||"?").trim().charAt(0).toUpperCase();
+    var status=l?'<span class="tag ok">✓ '+fmtMoeda(l.valor_pago)+'</span>':'<span class="tag pend">pendente</span>';
+    if(l){soma+=Number(l.valor_pago)||0;lanc++;}
+    html+='<div class="pessoa">'+
+      '<div class="av">'+esc(ini)+'</div>'+
+      '<div class="info"><div class="nome" data-edit="'+p.id+'">'+esc(p.nome)+'</div>'+
+      '<div class="doc">'+esc(p.documento)+' · <span class="tag '+(pj?"pj":"pf")+'">'+(pj?"PJ":"PF")+'</span> '+status+'</div></div>'+
+      '<div class="acts">'+
+        '<button class="btn btn-mini '+(l?"btn-s":"btn-p")+'" data-lanc="'+p.id+'">'+(l?"Editar mês":"Lançar mês")+'</button>'+
+        '<button class="icbtn" data-edit="'+p.id+'" title="Editar cadastro">✏️</button>'+
+        '<button class="icbtn del" data-rem="'+p.id+'" title="Remover autônomo">🗑</button>'+
+      '</div></div>';
+  });
+  if(!state.pessoas.length)html='<div class="vazio">Nenhum autônomo cadastrado ainda.<br>Clique em <strong>+ Novo autônomo</strong> para começar.</div>';
+  box.innerHTML=html;
+  $("totPessoas").textContent=state.pessoas.length;
+  $("totLanc").textContent=lanc;
+  $("totValor").textContent=fmtMoeda(soma);
+}
+
+/* ---------- modal cadastro ---------- */
+var CAMPOS_P=["pj_pf","nome","documento","telefone","data_nascimento","cep","logradouro","endereco","numero","bairro","cidade","uf","tipo_chave_pix","chave_pix"];
+function docPJ(){return $("f_pj_pf").value==="Pessoa Jurídica";}
+function ajustarDoc(){var e=$("f_documento");e.value=docPJ()?mCNPJ(e.value):mCPF(e.value);$("lblDoc").innerHTML=(docPJ()?"CNPJ":"CPF")+' <span class="ob">*</span>';e.placeholder=docPJ()?"00.000.000/0000-00":"000.000.000-00";}
+function ajustarPix(){var t=$("f_tipo_chave_pix").value,e=$("f_chave_pix");if(t==="CPF")e.value=mCPF(e.value);else if(t==="CNPJ")e.value=mCNPJ(e.value);else if(t==="Telefone")e.value=mTel(e.value);e.placeholder=t?("chave do tipo "+t):"Selecione o tipo primeiro";}
+function validarCampoP(f){var v;switch(f){
+  case"pj_pf":v=$("f_pj_pf").value;return{ok:v==="Pessoa Física"||v==="Pessoa Jurídica",m:"Selecione PF ou PJ."};
+  case"nome":return{ok:nomeValido($("f_nome").value),m:"Informe nome e sobrenome."};
+  case"documento":return docPJ()?{ok:validarCNPJ($("f_documento").value),m:"CNPJ inválido."}:{ok:validarCPF($("f_documento").value),m:"CPF inválido."};
+  case"telefone":return{ok:validarTelefone($("f_telefone").value),m:"Telefone inválido."};
+  case"data_nascimento":var dn=$("f_data_nascimento").value;if(!dataValida(dn))return{ok:false,m:"Data inválida (DD/MM/AAAA)."};var id=calcularIdade(dn);if(id<16)return{ok:false,m:"Menor de 16 anos não é permitido."};if(id>120)return{ok:false,m:"Idade improvável."};return{ok:true};
+  case"cep":return{ok:validarCEP($("f_cep").value),m:"CEP deve ter 8 dígitos."};
+  case"logradouro":return{ok:$("f_logradouro").value!=="",m:"Selecione o tipo."};
+  case"endereco":return{ok:$("f_endereco").value.trim().length>=2,m:"Informe a via."};
+  case"numero":return{ok:$("f_numero").value.trim().length>=1,m:"Informe o número."};
+  case"bairro":return{ok:$("f_bairro").value.trim().length>=2,m:"Informe o bairro."};
+  case"cidade":return{ok:$("f_cidade").value.trim().length>=2,m:"Informe a cidade."};
+  case"uf":return{ok:UFS.indexOf($("f_uf").value)!==-1,m:"Selecione a UF."};
+  case"tipo_chave_pix":return{ok:$("f_tipo_chave_pix").value!=="",m:"Selecione o tipo."};
+  case"chave_pix":var tp=$("f_tipo_chave_pix").value;if(!tp)return{ok:false,m:"Selecione o tipo antes."};return{ok:validarPix(tp,$("f_chave_pix").value),m:"Chave inválida para o tipo "+tp+"."};
+}return{ok:true};}
+function marcaP(f,ok,m){var b=document.querySelector('#modalPessoa .campo[data-f="'+f+'"]');if(!b)return;b.className="campo"+(b.classList.contains("full")?" full":"")+(ok?"":" bad");var e=b.querySelector(".err");if(e&&m)e.textContent=m;}
+function abrirPessoa(p){
+  state.editId=p?p.id:null;
+  $("mpTitulo").textContent=p?"Editar autônomo":"Novo autônomo";
+  CAMPOS_P.forEach(function(f){var el=$("f_"+f);if(el)el.value=p?(p[f]||""):"";marcaP(f,true,"");document.querySelector('#modalPessoa .campo[data-f="'+f+'"]').className="campo"+(document.querySelector('#modalPessoa .campo[data-f="'+f+'"]').classList.contains("full")?" full":"");});
+  var _pc=(state.comp||compAtual()).split("-");
+  $("cadCompLabel").textContent=MESES[parseInt(_pc[1],10)-1]+"/"+_pc[0];
+  var _l=p?lancByPessoa(p.id):null;
+  $("f_p_dia").value=_l?(_l.dia_trabalhado||""):"";
+  $("f_p_valor").value=_l?fmtMoeda(_l.valor_pago):"";
+  document.querySelector('#modalPessoa .campo[data-f="p_dia"]').className="campo";
+  document.querySelector('#modalPessoa .campo[data-f="p_valor"]').className="campo";
+  ajustarDoc();ajustarPix();$("dicaCep").textContent="";
+  $("modalPessoa").classList.remove("hide");
+}
+function salvarPessoa(){
+  var tudoOk=true;
+  CAMPOS_P.forEach(function(f){var r=validarCampoP(f);marcaP(f,r.ok,r.ok?"":r.m);if(!r.ok)tudoOk=false;});
+  var _dia=$("f_p_dia").value.trim(), _valor=lerMoeda($("f_p_valor").value), _lancObrig=(!state.editId)||(_dia!==""||$("f_p_valor").value.trim()!=="");
+  document.querySelector('#modalPessoa .campo[data-f="p_dia"]').className="campo";
+  document.querySelector('#modalPessoa .campo[data-f="p_valor"]').className="campo";
+  if(_lancObrig){
+    if(!dataValida(_dia)){var _bd=document.querySelector('#modalPessoa .campo[data-f="p_dia"]');_bd.className="campo bad";_bd.querySelector(".err").textContent="Data inválida (DD/MM/AAAA).";tudoOk=false;}
+    if(!(_valor>0)){var _bv=document.querySelector('#modalPessoa .campo[data-f="p_valor"]');_bv.className="campo bad";_bv.querySelector(".err").textContent="Informe um valor maior que zero.";tudoOk=false;}
+  }
+  if(!tudoOk){toast("Há campos pendentes no cadastro.",true);return;}
+  var p={nome:$("f_nome").value.replace(/\s+/g," ").trim().toUpperCase(),pj_pf:$("f_pj_pf").value,documento:$("f_documento").value.trim(),telefone:$("f_telefone").value.trim(),cep:mCEP($("f_cep").value),logradouro:$("f_logradouro").value,endereco:$("f_endereco").value.trim(),numero:$("f_numero").value.trim(),bairro:$("f_bairro").value.trim(),cidade:$("f_cidade").value.trim(),uf:$("f_uf").value,data_nascimento:$("f_data_nascimento").value.trim(),tipo_chave_pix:$("f_tipo_chave_pix").value,chave_pix:$("f_chave_pix").value.trim()};
+  if(state.editId)p.id=state.editId;
+  btnLoad("btnSalvarPessoa",true);
+  DB.savePessoa(p).then(function(saved){if(_lancObrig){return DB.saveLancamento({pessoa_id:saved.id,competencia:state.comp,dia_trabalhado:_dia,valor_pago:_valor});}}).then(function(){$("modalPessoa").classList.add("hide");toast(state.editId?"Cadastro atualizado!":"Autônomo cadastrado e lançado!");return carregar();}).catch(function(e){toast("Erro ao salvar: "+(e.message||e),true);}).then(function(){btnLoad("btnSalvarPessoa",false);});
+}
+
+/* ---------- modal lançamento ---------- */
+function abrirLanc(p){
+  state.lancPessoa=p;var l=lancByPessoa(p.id);
+  $("lancNome").textContent=p.nome;
+  $("lancComp").textContent="Referente a "+MESES[parseInt(state.comp.split("-")[1],10)-1]+"/"+state.comp.split("-")[0];
+  $("f_dia_trabalhado").value=l?(l.dia_trabalhado||""):"";
+  $("f_valor_pago").value=l?fmtMoeda(l.valor_pago):"";
+  ["dia_trabalhado","valor_pago"].forEach(function(f){var b=document.querySelector('#modalLanc .campo[data-f="'+f+'"]');b.className="campo";});
+  $("btnRemoverLanc").className="btn btn-d btn-mini"+(l?"":" hide");
+  $("modalLanc").classList.remove("hide");
+}
+function salvarLanc(){
+  var dia=$("f_dia_trabalhado").value.trim(),valor=lerMoeda($("f_valor_pago").value),ok=true;
+  if(!dataValida(dia)){document.querySelector('#modalLanc .campo[data-f="dia_trabalhado"]').className="campo bad";document.querySelector('#modalLanc .campo[data-f="dia_trabalhado"] .err').textContent="Data inválida (DD/MM/AAAA).";ok=false;}
+  if(!(valor>0)){document.querySelector('#modalLanc .campo[data-f="valor_pago"]').className="campo bad";document.querySelector('#modalLanc .campo[data-f="valor_pago"] .err').textContent="Informe um valor maior que zero.";ok=false;}
+  if(!ok)return;
+  var l={pessoa_id:state.lancPessoa.id,competencia:state.comp,dia_trabalhado:dia,valor_pago:valor};
+  btnLoad("btnSalvarLanc",true);
+  DB.saveLancamento(l).then(function(){$("modalLanc").classList.add("hide");toast("Lançamento salvo!");return carregar();}).catch(function(e){toast("Erro: "+(e.message||e),true);}).then(function(){btnLoad("btnSalvarLanc",false);});
+}
+
+/* ---------- export ---------- */
+function exportar(){
+  if(typeof XLSX==="undefined"){toast("Biblioteca de Excel não carregou.",true);return;}
+  if(!state.lancamentos.length){toast("Nenhum lançamento neste mês para exportar.",true);return;}
+  var aoa=[CABECALHO];
+  state.lancamentos.slice().sort(function(a,b){var pa=pessoaById(a.pessoa_id),pb=pessoaById(b.pessoa_id);return ((pa&&pa.nome)||"").localeCompare((pb&&pb.nome)||"");}).forEach(function(l){
+    var p=pessoaById(l.pessoa_id);if(!p)return;
+    aoa.push([p.nome,p.documento,p.telefone,p.cep,p.logradouro,p.endereco,p.numero,p.bairro,p.cidade,p.uf,p.data_nascimento,l.dia_trabalhado,Number(l.valor_pago)||0,p.chave_pix,p.tipo_chave_pix,p.pj_pf]);
+  });
+  var ws=XLSX.utils.aoa_to_sheet(aoa),i;
+  for(i=1;i<aoa.length;i++){var ref=XLSX.utils.encode_cell({c:12,r:i});if(ws[ref]){ws[ref].t="n";ws[ref].z='"R$" #,##0.00';}}
+  ws["!cols"]=[{wch:26},{wch:18},{wch:16},{wch:11},{wch:12},{wch:24},{wch:9},{wch:18},{wch:18},{wch:5},{wch:14},{wch:13},{wch:13},{wch:30},{wch:30},{wch:20}];
+  var wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,"Planilha1");
+  var pc=state.comp.split("-");
+  XLSX.writeFile(wb,"RPA_"+pc[1]+"_"+pc[0]+".xlsx");
+  toast("Excel gerado: RPA_"+pc[1]+"_"+pc[0]+".xlsx");
+}
+
+/* ---------- ViaCEP ---------- */
+function buscarCep(){
+  var cep=soNum($("f_cep").value);if(cep.length!==8)return;
+  if(!navigator.onLine){$("dicaCep").textContent="Offline — preencha manualmente.";return;}
+  $("dicaCep").textContent="Buscando endereço...";
+  fetch("https://viacep.com.br/ws/"+cep+"/json/").then(function(r){return r.json();}).then(function(r){
+    if(r&&!r.erro){
+      var via=(r.logradouro||"").trim(),tipo="",resto=via;
+      if(via){var prim=via.split(" ")[0];for(var j=0;j<TIPOS_LOG.length;j++)if(prim.toLowerCase()===TIPOS_LOG[j].toLowerCase()){tipo=TIPOS_LOG[j];resto=via.substring(prim.length).replace(/^\s+/,"");break;}}
+      $("f_logradouro").value=tipo||"Outro";if(resto)$("f_endereco").value=resto;if(r.bairro)$("f_bairro").value=r.bairro;if(r.localidade)$("f_cidade").value=r.localidade;if(r.uf&&UFS.indexOf(r.uf)!==-1)$("f_uf").value=r.uf;
+      $("dicaCep").textContent="Endereço preenchido. Confira.";
+    }else $("dicaCep").textContent="CEP não encontrado — preencha manualmente.";
+  }).catch(function(){$("dicaCep").textContent="Sem internet — preencha manualmente.";});
+}
+
+/* ---------- sessão / navegação ---------- */
+function btnLoad(id,on){var b=$(id);if(!b)return;if(on){b._t=b.innerHTML;b.disabled=true;b.innerHTML='<span class="spin"></span>';}else{b.disabled=false;if(b._t)b.innerHTML=b._t;}}
+function entrarApp(){
+  $("viewLogin").classList.add("hide");$("viewApp").classList.remove("hide");
+  var pf=state.profile,esc=(pf.role==="escritorio");
+  $("quem").textContent=pf.nome||"";
+  $("papelPill").textContent=esc?"Escritório":"Cliente";
+  $("btnExportar").className="btn btn-s"+(esc?"":" hide");
+  $("demoBanner").className="demo-banner"+(DEMO?"":" hide");
+  carregar();
+}
+function sair(){DB.signOut().then(function(){state.profile=null;$("viewApp").classList.add("hide");$("viewLogin").classList.remove("hide");$("senha").value="";});}
+
+function login(){
+  $("loginErr").style.display="none";
+  btnLoad("btnLogin",true);
+  DB.signIn($("email").value.trim(),$("senha").value).then(function(){return DB.getProfile();}).then(function(pf){
+    if(!pf)throw new Error("Perfil não encontrado.");
+    state.profile=pf;btnLoad("btnLogin",false);entrarApp();
+  }).catch(function(e){btnLoad("btnLogin",false);$("loginErr").textContent=traduzErro(e);$("loginErr").style.display="block";});
+}
+function traduzErro(e){var m=(e&&e.message)||(""+e);if(/Invalid login/i.test(m))return"E-mail ou senha incorretos.";if(/Email not confirmed/i.test(m))return"E-mail ainda não confirmado.";return m;}
+function loginDemo(papel){DB.signIn(papel).then(function(pf){state.profile=pf;entrarApp();});}
+
+/* ---------- eventos ---------- */
+function wire(){
+  preencherSelects();
+  if(DEMO){$("loginForm").classList.add("hide");$("loginDemo").classList.remove("hide");}
+  $("btnLogin").addEventListener("click",login);
+  $("senha").addEventListener("keydown",function(e){if(e.key==="Enter")login();});
+  $("btnDemoCli").addEventListener("click",function(){loginDemo("cliente");});
+  $("btnDemoEsc").addEventListener("click",function(){loginDemo("escritorio");});
+  $("btnSair").addEventListener("click",sair);
+  $("selMes").addEventListener("change",carregar);
+  $("selAno").addEventListener("change",carregar);
+  $("btnNovo").addEventListener("click",function(){abrirPessoa(null);});
+  $("btnExportar").addEventListener("click",exportar);
+  $("btnSalvarPessoa").addEventListener("click",salvarPessoa);
+  $("btnSalvarLanc").addEventListener("click",salvarLanc);
+  $("btnRemoverLanc").addEventListener("click",function(){if(!confirm("Remover o lançamento deste mês?"))return;DB.deleteLancamento(state.lancPessoa.id,state.comp).then(function(){$("modalLanc").classList.add("hide");toast("Lançamento removido.");return carregar();});});
+  $("f_pj_pf").addEventListener("change",ajustarDoc);
+  $("f_documento").addEventListener("input",function(){this.value=docPJ()?mCNPJ(this.value):mCPF(this.value);});
+  $("f_telefone").addEventListener("input",function(){this.value=mTel(this.value);});
+  $("f_cep").addEventListener("input",function(){this.value=mCEP(this.value);});
+  $("f_cep").addEventListener("blur",buscarCep);
+  $("f_data_nascimento").addEventListener("input",function(){this.value=mData(this.value);});
+  $("f_dia_trabalhado").addEventListener("input",function(){this.value=mData(this.value);});
+  $("f_valor_pago").addEventListener("input",function(){this.value=this.value===""?"":fmtMoeda(lerMoeda(this.value));});
+  $("f_p_dia").addEventListener("input",function(){this.value=mData(this.value);});
+  $("f_p_valor").addEventListener("input",function(){this.value=this.value===""?"":fmtMoeda(lerMoeda(this.value));});
+  $("f_nome").addEventListener("input",function(){var p=this.selectionStart;this.value=this.value.toUpperCase();try{this.setSelectionRange(p,p);}catch(e){}});
+  $("f_tipo_chave_pix").addEventListener("change",function(){$("f_chave_pix").value="";ajustarPix();});
+  $("f_chave_pix").addEventListener("input",function(){var t=$("f_tipo_chave_pix").value;if(t==="CPF")this.value=mCPF(this.value);else if(t==="CNPJ")this.value=mCNPJ(this.value);else if(t==="Telefone")this.value=mTel(this.value);});
+  document.querySelectorAll("[data-close]").forEach(function(b){b.addEventListener("click",function(){$(b.getAttribute("data-close")).classList.add("hide");});});
+  $("lista").addEventListener("click",function(ev){
+    var t=ev.target,id;
+    if((id=t.getAttribute("data-edit"))){abrirPessoa(pessoaById(id));}
+    else if((id=t.getAttribute("data-lanc"))){abrirLanc(pessoaById(id));}
+    else if((id=t.getAttribute("data-rem"))){var p=pessoaById(id);if(confirm("Remover \""+(p?p.nome:"")+"\"? O histórico de lançamentos dele também sai das listas."))DB.deletePessoa(id).then(function(){toast("Autônomo removido.");return carregar();});}
+  });
+  // sessão existente (Supabase)
+  if(!DEMO&&sbClient){sbClient.auth.getSession().then(function(r){if(r.data&&r.data.session){DB.getProfile().then(function(pf){if(pf){state.profile=pf;entrarApp();}});}});}
+  if(location.search.indexOf("teste=1")!==-1)autoteste();
+}
+
+/* ---------- autoteste ?teste=1 ---------- */
+function autoteste(){
+  var T=[],fa=0;
+  function ok(n,c){T.push({n:n,ok:!!c});if(!c)fa++;}
+  function eq(n,a,b){T.push({n:n,ok:a===b,d:"obtido="+a});if(a!==b)fa++;}
+  ok("CPF válido",validarCPF("529.982.247-25"));ok("CPF inválido",!validarCPF("12345678900"));
+  ok("CNPJ válido",validarCNPJ("11.222.333/0001-81"));ok("CNPJ inválido",!validarCNPJ("11222333000180"));
+  ok("Tel válido",validarTelefone("(11) 98888-7777"));ok("Tel DDD inválido",!validarTelefone("(00) 98888-7777"));
+  ok("E-mail válido",validarEmail("a@b.com"));ok("E-mail inválido",!validarEmail("a@@b"));
+  ok("Data 29/02/2024 ok",dataValida("29/02/2024"));ok("Data 31/04 inválida",!dataValida("31/04/2024"));
+  var h=new Date(),d16=pad2(h.getDate())+"/"+pad2(h.getMonth()+1)+"/"+(h.getFullYear()-16),d15=pad2(h.getDate())+"/"+pad2(h.getMonth()+1)+"/"+(h.getFullYear()-15);
+  ok("Idade 16 libera",calcularIdade(d16)>=16);ok("Idade 15 bloqueia",calcularIdade(d15)<16);
+  ok("PIX CPF",validarPix("CPF","529.982.247-25"));ok("PIX email",validarPix("E-mail","a@b.com"));ok("PIX aleatória UUID",validarPix("Aleatória","123e4567-e89b-12d3-a456-426614174000"));ok("PIX aleatória curta inválida",!validarPix("Aleatória","abc"));
+  ok("Nome+sobrenome",nomeValido("João Silva"));ok("Só nome inválido",!nomeValido("João"));
+  eq("Moeda 1234.5",fmtMoeda(1234.5),"R$ 1.234,50");eq("Moeda 0",fmtMoeda(0),"R$ 0,00");eq("lerMoeda",lerMoeda("R$ 1.234,56"),1234.56);
+  eq("mCPF",mCPF("52998224725"),"529.982.247-25");eq("mCNPJ",mCNPJ("11222333000181"),"11.222.333/0001-81");eq("mData",mData("29022024"),"29/02/2024");
+  eq("Cabeçalho 16 col",CABECALHO.length,16);eq("col12 espaço","DIA TRABALHADO ",CABECALHO[11]);eq("col14 2 espaços","CHAVE  PIX",CABECALHO[13]);
+  ok("XLSX carregado",typeof XLSX!=="undefined");
+  var b="",i;for(i=0;i<T.length;i++)b+='<div class="tl '+(T[i].ok?"p":"f")+'"><div class="s">'+(T[i].ok?"PASS":"FAIL")+'</div><div>'+esc(T[i].n)+(T[i].ok?"":' — '+esc(T[i].d||""))+'</div></div>';
+  $("ptB").innerHTML=b;$("ptH").className="h "+(fa===0?"ok":"f");$("ptT").textContent="Autoteste — "+(T.length-fa)+"/"+T.length+" OK"+(fa?" · "+fa+" FALHA(S)":" · tudo certo ✓");$("pt").className="on";
+  if(window.console)console.log("[MX RPA online] Autoteste:",(T.length-fa)+"/"+T.length,"ok,",fa,"falhas");
+}
+
+if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",wire);else wire();
+})();
+</script>
+</body>
+</html>
