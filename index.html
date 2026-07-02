@@ -438,13 +438,14 @@ function salvarLanc(){
 /* ---------- export ---------- */
 function csvCampo(v){v=(v==null)?"":(""+v);if(v.indexOf(";")!==-1||v.indexOf('"')!==-1||v.indexOf("\n")!==-1||v.indexOf("\r")!==-1){return '"'+v.replace(/"/g,'""')+'"';}return v;}
 function fmtNumCSV(n){return (Number(n)||0).toFixed(2).replace(".",",");}
+function semAcento(s){return (s==null?"":(""+s)).normalize("NFD").replace(/[̀-ͯ]/g,"");}
 function exportar(){
   if(!state.lancamentos.length){toast("Nenhum lançamento neste mês para exportar.",true);return;}
-  var linhas=[CABECALHO.map(csvCampo).join(";")];
+  var linhas=[CABECALHO.map(function(h){return csvCampo(semAcento(h));}).join(";")];
   state.lancamentos.slice().sort(function(a,b){var pa=pessoaById(a.pessoa_id),pb=pessoaById(b.pessoa_id);return ((pa&&pa.nome)||"").localeCompare((pb&&pb.nome)||"");}).forEach(function(l){
     var p=pessoaById(l.pessoa_id);if(!p)return;
     var campos=[p.nome,p.documento,p.telefone,p.cep,p.logradouro,p.endereco,p.numero,p.bairro,p.cidade,p.uf,p.data_nascimento,l.dia_trabalhado,fmtNumCSV(l.valor_pago),p.chave_pix,p.tipo_chave_pix,p.pj_pf];
-    linhas.push(campos.map(csvCampo).join(";"));
+    linhas.push(campos.map(function(c){return csvCampo(semAcento(c));}).join(";"));
   });
   var conteudo=linhas.join("\r\n");
   var blob=new Blob([conteudo],{type:"text/csv;charset=utf-8;"});
@@ -553,6 +554,7 @@ function autoteste(){
   eq("Cabeçalho 16 col",CABECALHO.length,16);eq("col12 espaço","DIA TRABALHADO ",CABECALHO[11]);eq("col14 2 espaços","CHAVE  PIX",CABECALHO[13]);
   eq("CSV numero 1500",fmtNumCSV(1500),"1500,00");eq("CSV numero 3200.5",fmtNumCSV(3200.5),"3200,50");
   ok("CSV escapa ; com aspas",csvCampo("a;b")==='"a;b"');ok("CSV campo normal",csvCampo("Rua das Flores")==="Rua das Flores");
+  eq("Sem acento Sao Paulo",semAcento("São Paulo"),"Sao Paulo");eq("Sem acento ENDERECO",semAcento("ENDEREÇO"),"ENDERECO");eq("Sem acento cedilha",semAcento("Praça"),"Praca");
   var b="",i;for(i=0;i<T.length;i++)b+='<div class="tl '+(T[i].ok?"p":"f")+'"><div class="s">'+(T[i].ok?"PASS":"FAIL")+'</div><div>'+esc(T[i].n)+(T[i].ok?"":' — '+esc(T[i].d||""))+'</div></div>';
   $("ptB").innerHTML=b;$("ptH").className="h "+(fa===0?"ok":"f");$("ptT").textContent="Autoteste — "+(T.length-fa)+"/"+T.length+" OK"+(fa?" · "+fa+" FALHA(S)":" · tudo certo ✓");$("pt").className="on";
   if(window.console)console.log("[MX RPA online] Autoteste:",(T.length-fa)+"/"+T.length,"ok,",fa,"falhas");
