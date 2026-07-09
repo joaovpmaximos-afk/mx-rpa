@@ -462,13 +462,15 @@ function fmtNumCSV(n){return (Number(n)||0).toFixed(2).replace(".",",");}
 function limpar(s){return semAcento(s).replace(/[^A-Za-z0-9 ]/g,"");}
 function soDig(s){return (s==null?"":(""+s)).replace(/\D/g,"");}
 function valorCentavos(n){return String(Math.round((Number(n)||0)*100));}
+/* chave PIX e a UNICA coluna com excecao aos "sem simbolos": sem @/. a chave deixa de ser valida */
+function limparPixCSV(tipo,ch){ch=semAcento(ch);if(tipo==="Telefone"||tipo==="CPF"||tipo==="CNPJ")return ch.replace(/\D/g,"");return ch.replace(/[^A-Za-z0-9@._\-]/g,"");}
 function semAcento(s){return (s==null?"":(""+s)).normalize("NFD").replace(/[̀-ͯ]/g,"");}
 function exportar(){
   if(!state.lancamentos.length){toast("Nenhum lançamento neste mês para exportar.",true);return;}
   var linhas=[CABECALHO.map(function(h){return csvCampo(limpar(h));}).join(";")];
   state.lancamentos.slice().sort(function(a,b){var pa=pessoaById(a.pessoa_id),pb=pessoaById(b.pessoa_id);var na=((pa&&pa.nome)||""),nb=((pb&&pb.nome)||"");if(na!==nb)return na.localeCompare(nb);return diaKey(a.dia_trabalhado)<diaKey(b.dia_trabalhado)?-1:1;}).forEach(function(l){
     var p=pessoaById(l.pessoa_id);if(!p)return;
-    var campos=[limpar(p.nome),soDig(p.documento),soDig(p.telefone),soDig(p.cep),limpar(p.logradouro),limpar(p.endereco),limpar(p.numero),limpar(p.bairro),limpar(p.cidade),limpar(p.uf),soDig(p.data_nascimento),soDig(l.dia_trabalhado),valorCentavos(l.valor_pago),limpar(p.chave_pix),limpar(p.tipo_chave_pix),limpar(p.pj_pf)];
+    var campos=[limpar(p.nome),soDig(p.documento),soDig(p.telefone),soDig(p.cep),limpar(p.logradouro),limpar(p.endereco),limpar(p.numero),limpar(p.bairro),limpar(p.cidade),limpar(p.uf),soDig(p.data_nascimento),soDig(l.dia_trabalhado),valorCentavos(l.valor_pago),limparPixCSV(p.tipo_chave_pix,p.chave_pix),limpar(p.tipo_chave_pix),limpar(p.pj_pf)];
     linhas.push(campos.map(csvCampo).join(";"));
   });
   var conteudo=linhas.join("\r\n");
@@ -589,6 +591,9 @@ function autoteste(){
   eq("Limpar tira simbolos",limpar("(TELEFONE, E-MAIL)"),"TELEFONE EMAIL");eq("Limpar acento+espaco",limpar("São Paulo"),"Sao Paulo");
   eq("Limpar ENDERECO",limpar("ENDEREÇO"),"ENDERECO");eq("Limpar cedilha",limpar("Praça"),"Praca");
   eq("diaKey ordena por data",diaKey("10/06/2026"),"20260610");
+  eq("PIX email mantem @ e ponto",limparPixCSV("E-mail","agenor@gmail.com"),"agenor@gmail.com");
+  eq("PIX telefone so digitos",limparPixCSV("Telefone","(84) 99951-8187"),"84999518187");
+  eq("PIX aleatoria mantem UUID",limparPixCSV("Aleatória","123e4567-e89b-12d3-a456-426614174000"),"123e4567-e89b-12d3-a456-426614174000");
   var b="",i;for(i=0;i<T.length;i++)b+='<div class="tl '+(T[i].ok?"p":"f")+'"><div class="s">'+(T[i].ok?"PASS":"FAIL")+'</div><div>'+esc(T[i].n)+(T[i].ok?"":' — '+esc(T[i].d||""))+'</div></div>';
   $("ptB").innerHTML=b;$("ptH").className="h "+(fa===0?"ok":"f");$("ptT").textContent="Autoteste — "+(T.length-fa)+"/"+T.length+" OK"+(fa?" · "+fa+" FALHA(S)":" · tudo certo ✓");$("pt").className="on";
   if(window.console)console.log("[MX RPA online] Autoteste:",(T.length-fa)+"/"+T.length,"ok,",fa,"falhas");
