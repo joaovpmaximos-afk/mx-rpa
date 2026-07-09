@@ -163,7 +163,7 @@ label .ob{color:var(--green);font-weight:800}
 
     <div class="tot">
       <div class="b"><span>Autônomos cadastrados</span><strong id="totPessoas">0</strong></div>
-      <div class="b"><span>Lançados no mês</span><strong id="totLanc">0</strong></div>
+      <div class="b"><span>Dias lançados no mês</span><strong id="totLanc">0</strong></div>
       <div class="b v"><span>Total do mês</span><strong id="totValor">R$ 0,00</strong></div>
     </div>
 
@@ -196,12 +196,12 @@ label .ob{color:var(--green);font-weight:800}
         <div class="campo" data-f="tipo_chave_pix"><label>Tipo de chave PIX <span class="ob">*</span></label>
           <select id="f_tipo_chave_pix"><option value="">Selecione...</option><option>Telefone</option><option>E-mail</option><option>CPF</option><option>CNPJ</option><option>Aleatória</option></select><div class="err"></div></div>
         <div class="campo" data-f="chave_pix"><label>Chave PIX <span class="ob">*</span></label><input id="f_chave_pix" placeholder="Selecione o tipo primeiro"><div class="err"></div></div>
-        <div class="campo full" style="border-top:1px solid #eef0ee;padding-top:12px;margin-top:2px">
-          <div style="font-family:'Sora',Arial,sans-serif;font-weight:700;font-size:14px;color:var(--green)">Trabalho do mês — <span id="cadCompLabel"></span></div>
-          <div class="dica">Dia trabalhado e valor pago a este autônomo no mês selecionado.</div>
+        <div class="campo full trabmes" style="border-top:1px solid #eef0ee;padding-top:12px;margin-top:2px">
+          <div style="font-family:'Sora',Arial,sans-serif;font-weight:700;font-size:14px;color:var(--green)">Primeiro dia trabalhado — <span id="cadCompLabel"></span></div>
+          <div class="dica">Já lança o 1º dia deste autônomo no mês. Os demais dias você adiciona depois em "Dias do mês".</div>
         </div>
-        <div class="campo" data-f="p_dia"><label>Dia trabalhado <span class="ob">*</span></label><input id="f_p_dia" inputmode="numeric" placeholder="00/00/0000"><div class="err"></div></div>
-        <div class="campo" data-f="p_valor"><label>Valor pago <span class="ob">*</span></label><input id="f_p_valor" inputmode="numeric" placeholder="R$ 0,00"><div class="err"></div></div>
+        <div class="campo trabmes" data-f="p_dia"><label>Dia trabalhado <span class="ob">*</span></label><input id="f_p_dia" inputmode="numeric" placeholder="00/00/0000"><div class="err"></div></div>
+        <div class="campo trabmes" data-f="p_valor"><label>Valor pago <span class="ob">*</span></label><input id="f_p_valor" inputmode="numeric" placeholder="R$ 0,00"><div class="err"></div></div>
       </div>
     </div>
     <div class="mf">
@@ -212,20 +212,25 @@ label .ob{color:var(--green);font-weight:800}
   </div>
 </div>
 
-<!-- ============ MODAL LANÇAMENTO DO MÊS ============ -->
+<!-- ============ MODAL LANÇAMENTOS DO MÊS (vários dias) ============ -->
 <div id="modalLanc" class="modal hide">
-  <div class="box" style="max-width:460px">
-    <div class="mh"><h2>Lançamento do mês</h2><button class="x" data-close="modalLanc">✕</button></div>
+  <div class="box" style="max-width:540px">
+    <div class="mh"><h2>Lançamentos do mês</h2><button class="x" data-close="modalLanc">✕</button></div>
     <div class="mb">
-      <p style="margin:0 0 14px;font-size:14px;color:var(--cinza)">Autônomo: <strong id="lancNome" style="color:var(--primary)"></strong><br><span id="lancComp"></span></p>
-      <div class="campo" data-f="dia_trabalhado"><label>Dia trabalhado <span class="ob">*</span></label><input id="f_dia_trabalhado" inputmode="numeric" placeholder="00/00/0000"><div class="err"></div></div>
-      <div class="campo" data-f="valor_pago"><label>Valor pago <span class="ob">*</span></label><input id="f_valor_pago" inputmode="numeric" placeholder="R$ 0,00"><div class="err"></div></div>
+      <p style="margin:0 0 10px;font-size:14px;color:var(--cinza)">Autônomo: <strong id="lancNome" style="color:var(--primary)"></strong><br><span id="lancComp"></span></p>
+      <div id="lancLista"></div>
+      <div style="border-top:1px solid #eef0ee;margin-top:12px;padding-top:12px">
+        <div class="grid2">
+          <div class="campo" data-f="dia_trabalhado"><label>Dia trabalhado <span class="ob">*</span></label><input id="f_dia_trabalhado" inputmode="numeric" placeholder="00/00/0000"><div class="err"></div></div>
+          <div class="campo" data-f="valor_pago"><label>Valor pago <span class="ob">*</span></label><input id="f_valor_pago" inputmode="numeric" placeholder="R$ 0,00"><div class="err"></div></div>
+        </div>
+        <button class="btn btn-p btn-block" id="btnSalvarLanc">+ Adicionar dia</button>
+        <div class="dica" style="margin-top:6px">Lançar um dia que já existe substitui o valor daquele dia. Use 🗑 para excluir um dia.</div>
+      </div>
     </div>
     <div class="mf">
-      <button class="btn btn-d btn-mini hide" id="btnRemoverLanc">Remover do mês</button>
       <div style="flex:1"></div>
-      <button class="btn btn-s" data-close="modalLanc">Cancelar</button>
-      <button class="btn btn-p" id="btnSalvarLanc">Salvar</button>
+      <button class="btn btn-s" data-close="modalLanc">Fechar</button>
     </div>
   </div>
 </div>
@@ -293,8 +298,8 @@ var DemoDB={
   savePessoa:function(p){var d=this._l();if(p.id){var i=d.pessoas.findIndex(function(x){return x.id===p.id;});if(i>=0)d.pessoas[i]=Object.assign({},d.pessoas[i],p);}else{p.id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():("p"+Date.now());p.ativo=true;d.pessoas.push(p);}this._s(d);return Promise.resolve(p);},
   deletePessoa:function(id){var d=this._l();d.pessoas=d.pessoas.filter(function(x){return x.id!==id;});d.lancamentos=d.lancamentos.filter(function(x){return x.pessoa_id!==id;});this._s(d);return Promise.resolve();},
   listLancamentos:function(comp){var d=this._l();return Promise.resolve(d.lancamentos.filter(function(l){return l.competencia===comp;}));},
-  saveLancamento:function(l){var d=this._l();var i=d.lancamentos.findIndex(function(x){return x.pessoa_id===l.pessoa_id&&x.competencia===l.competencia;});if(i>=0)d.lancamentos[i]=Object.assign({},d.lancamentos[i],l);else{l.id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():("l"+Date.now());d.lancamentos.push(l);}this._s(d);return Promise.resolve(l);},
-  deleteLancamento:function(pessoa_id,comp){var d=this._l();d.lancamentos=d.lancamentos.filter(function(x){return !(x.pessoa_id===pessoa_id&&x.competencia===comp);});this._s(d);return Promise.resolve();}
+  saveLancamento:function(l){var d=this._l();var i=d.lancamentos.findIndex(function(x){return x.pessoa_id===l.pessoa_id&&x.competencia===l.competencia&&x.dia_trabalhado===l.dia_trabalhado;});if(i>=0)d.lancamentos[i]=Object.assign({},d.lancamentos[i],l);else{l.id=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():("l"+Date.now()+Math.floor(Math.random()*10000));d.lancamentos.push(l);}this._s(d);return Promise.resolve(l);},
+  deleteLancamento:function(id){var d=this._l();d.lancamentos=d.lancamentos.filter(function(x){return String(x.id)!==String(id);});this._s(d);return Promise.resolve();}
 };
 var SupaDB={
   signIn:function(email,senha){return sbClient.auth.signInWithPassword({email:email,password:senha}).then(function(r){if(r.error)throw r.error;return r.data;});},
@@ -304,8 +309,8 @@ var SupaDB={
   savePessoa:function(p){var row=Object.assign({},p);if(!row.cliente_id)row.cliente_id=state.profile.cliente_id;if(row.id){var id=row.id;delete row.id;return sbClient.from("pessoas").update(row).eq("id",id).select().single().then(function(r){if(r.error)throw r.error;return r.data;});}return sbClient.from("pessoas").insert(row).select().single().then(function(r){if(r.error)throw r.error;return r.data;});},
   deletePessoa:function(id){return sbClient.from("pessoas").update({ativo:false}).eq("id",id).then(function(r){if(r.error)throw r.error;});},
   listLancamentos:function(comp){return sbClient.from("lancamentos").select("*").eq("competencia",comp).then(function(r){if(r.error)throw r.error;return r.data;});},
-  saveLancamento:function(l){var row=Object.assign({},l);if(!row.cliente_id)row.cliente_id=state.profile.cliente_id;return sbClient.from("lancamentos").upsert(row,{onConflict:"pessoa_id,competencia"}).select().single().then(function(r){if(r.error)throw r.error;return r.data;});},
-  deleteLancamento:function(pessoa_id,comp){return sbClient.from("lancamentos").delete().eq("pessoa_id",pessoa_id).eq("competencia",comp).then(function(r){if(r.error)throw r.error;});}
+  saveLancamento:function(l){var row=Object.assign({},l);if(!row.cliente_id)row.cliente_id=state.profile.cliente_id;return sbClient.from("lancamentos").upsert(row,{onConflict:"pessoa_id,competencia,dia_trabalhado"}).select().single().then(function(r){if(r.error)throw r.error;return r.data;});},
+  deleteLancamento:function(id){return sbClient.from("lancamentos").delete().eq("id",id).then(function(r){if(r.error)throw r.error;});}
 };
 var DB=DEMO?DemoDB:SupaDB;
 
@@ -317,7 +322,8 @@ var state={profile:null,pessoas:[],lancamentos:[],comp:null,editId:null,lancPess
 function toast(msg,erro){var t=$("toast");t.textContent=msg;t.className="show"+(erro?" erro":"");clearTimeout(toast._t);toast._t=setTimeout(function(){t.className="";},3200);}
 function compAtual(){var d=new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1);}
 function pessoaById(id){for(var i=0;i<state.pessoas.length;i++)if(state.pessoas[i].id===id)return state.pessoas[i];return null;}
-function lancByPessoa(id){for(var i=0;i<state.lancamentos.length;i++)if(state.lancamentos[i].pessoa_id===id)return state.lancamentos[i];return null;}
+function diaKey(d){var p=(""+(d||"")).split("/");if(p.length!==3)return "";return p[2]+p[1]+p[0];}
+function lancsByPessoa(id){var out=[],i;for(i=0;i<state.lancamentos.length;i++)if(state.lancamentos[i].pessoa_id===id)out.push(state.lancamentos[i]);out.sort(function(a,b){return diaKey(a.dia_trabalhado)<diaKey(b.dia_trabalhado)?-1:1;});return out;}
 
 function preencherSelects(){
   var um=$("selMes"),ua=$("selAno"),i;
@@ -338,26 +344,27 @@ function carregar(){
 }
 
 function renderLista(){
-  var box=$("lista"),html="",soma=0,lanc=0,i;
+  var box=$("lista"),html="",soma=0;
   state.pessoas.forEach(function(p){
-    var l=lancByPessoa(p.id),pj=(p.pj_pf==="Pessoa Jurídica");
+    var ls=lancsByPessoa(p.id),qtd=ls.length,sub=0,pj=(p.pj_pf==="Pessoa Jurídica");
+    ls.forEach(function(l){sub+=Number(l.valor_pago)||0;});
     var ini=(p.nome||"?").trim().charAt(0).toUpperCase();
-    var status=l?'<span class="tag ok">✓ '+fmtMoeda(l.valor_pago)+'</span>':'<span class="tag pend">pendente</span>';
-    if(l){soma+=Number(l.valor_pago)||0;lanc++;}
+    var status=qtd?'<span class="tag ok">✓ '+qtd+' dia'+(qtd>1?'s':'')+' · '+fmtMoeda(sub)+'</span>':'<span class="tag pend">pendente</span>';
     html+='<div class="pessoa">'+
       '<div class="av">'+esc(ini)+'</div>'+
       '<div class="info"><div class="nome" data-edit="'+p.id+'">'+esc(p.nome)+'</div>'+
       '<div class="doc">'+esc(p.documento)+' · <span class="tag '+(pj?"pj":"pf")+'">'+(pj?"PJ":"PF")+'</span> '+status+'</div></div>'+
       '<div class="acts">'+
-        '<button class="btn btn-mini '+(l?"btn-s":"btn-p")+'" data-lanc="'+p.id+'">'+(l?"Editar mês":"Lançar mês")+'</button>'+
+        '<button class="btn btn-mini '+(qtd?"btn-s":"btn-p")+'" data-lanc="'+p.id+'">'+(qtd?"Dias do mês ("+qtd+")":"Lançar dias")+'</button>'+
         '<button class="icbtn" data-edit="'+p.id+'" title="Editar cadastro">✏️</button>'+
         '<button class="icbtn del" data-rem="'+p.id+'" title="Remover autônomo">🗑</button>'+
       '</div></div>';
   });
   if(!state.pessoas.length)html='<div class="vazio">Nenhum autônomo cadastrado ainda.<br>Clique em <strong>+ Novo autônomo</strong> para começar.</div>';
   box.innerHTML=html;
+  state.lancamentos.forEach(function(l){soma+=Number(l.valor_pago)||0;});
   $("totPessoas").textContent=state.pessoas.length;
-  $("totLanc").textContent=lanc;
+  $("totLanc").textContent=state.lancamentos.length;
   $("totValor").textContent=fmtMoeda(soma);
 }
 
@@ -371,7 +378,7 @@ function validarCampoP(f){var v;switch(f){
   case"nome":return{ok:nomeValido($("f_nome").value),m:"Informe nome e sobrenome."};
   case"documento":return docPJ()?{ok:validarCNPJ($("f_documento").value),m:"CNPJ inválido."}:{ok:validarCPF($("f_documento").value),m:"CPF inválido."};
   case"telefone":return{ok:validarTelefone($("f_telefone").value),m:"Telefone inválido."};
-  case"data_nascimento":var dn=$("f_data_nascimento").value;if(!dataValida(dn))return{ok:false,m:"Data inválida (DD/MM/AAAA)."};var id=calcularIdade(dn);if(id<16)return{ok:false,m:"Menor de 16 anos não é permitido."};if(id>120)return{ok:false,m:"Idade improvável."};return{ok:true};
+  case"data_nascimento":var dn=$("f_data_nascimento").value;if(state.editId&&dn.trim()==="")return{ok:true};if(!dataValida(dn))return{ok:false,m:"Data inválida (DD/MM/AAAA)."};var id=calcularIdade(dn);if(id<16)return{ok:false,m:"Menor de 16 anos não é permitido."};if(id>120)return{ok:false,m:"Idade improvável."};return{ok:true};
   case"cep":return{ok:validarCEP($("f_cep").value),m:"CEP deve ter 8 dígitos."};
   case"logradouro":return{ok:$("f_logradouro").value!=="",m:"Selecione o tipo."};
   case"endereco":return{ok:$("f_endereco").value.trim().length>=2,m:"Informe a via."};
@@ -389,23 +396,24 @@ function abrirPessoa(p){
   CAMPOS_P.forEach(function(f){var el=$("f_"+f);if(el)el.value=p?(p[f]||""):"";marcaP(f,true,"");document.querySelector('#modalPessoa .campo[data-f="'+f+'"]').className="campo"+(document.querySelector('#modalPessoa .campo[data-f="'+f+'"]').classList.contains("full")?" full":"");});
   var _pc=(state.comp||compAtual()).split("-");
   $("cadCompLabel").textContent=MESES[parseInt(_pc[1],10)-1]+"/"+_pc[0];
-  var _l=p?lancByPessoa(p.id):null;
-  $("f_p_dia").value=_l?(_l.dia_trabalhado||""):"";
-  $("f_p_valor").value=_l?fmtMoeda(_l.valor_pago):"";
-  document.querySelector('#modalPessoa .campo[data-f="p_dia"]').className="campo";
-  document.querySelector('#modalPessoa .campo[data-f="p_valor"]').className="campo";
+  /* secao "primeiro dia" so aparece em cadastro NOVO; em edicao os dias sao geridos no modal proprio */
+  var _tm=document.querySelectorAll('#modalPessoa .trabmes'),_i;
+  for(_i=0;_i<_tm.length;_i++){_tm[_i].style.display=p?"none":"";}
+  $("f_p_dia").value="";$("f_p_valor").value="";
+  document.querySelector('#modalPessoa .campo[data-f="p_dia"]').className="campo trabmes";
+  document.querySelector('#modalPessoa .campo[data-f="p_valor"]').className="campo trabmes";
   ajustarDoc();ajustarPix();$("dicaCep").textContent="";
   $("modalPessoa").classList.remove("hide");
 }
 function salvarPessoa(){
   var tudoOk=true;
   CAMPOS_P.forEach(function(f){var r=validarCampoP(f);marcaP(f,r.ok,r.ok?"":r.m);if(!r.ok)tudoOk=false;});
-  var _dia=$("f_p_dia").value.trim(), _valor=lerMoeda($("f_p_valor").value), _lancObrig=(!state.editId)||(_dia!==""||$("f_p_valor").value.trim()!=="");
-  document.querySelector('#modalPessoa .campo[data-f="p_dia"]').className="campo";
-  document.querySelector('#modalPessoa .campo[data-f="p_valor"]').className="campo";
+  var _dia=$("f_p_dia").value.trim(), _valor=lerMoeda($("f_p_valor").value), _lancObrig=(!state.editId);
+  document.querySelector('#modalPessoa .campo[data-f="p_dia"]').className="campo trabmes";
+  document.querySelector('#modalPessoa .campo[data-f="p_valor"]').className="campo trabmes";
   if(_lancObrig){
-    if(!dataValida(_dia)){var _bd=document.querySelector('#modalPessoa .campo[data-f="p_dia"]');_bd.className="campo bad";_bd.querySelector(".err").textContent="Data inválida (DD/MM/AAAA).";tudoOk=false;}
-    if(!(_valor>0)){var _bv=document.querySelector('#modalPessoa .campo[data-f="p_valor"]');_bv.className="campo bad";_bv.querySelector(".err").textContent="Informe um valor maior que zero.";tudoOk=false;}
+    if(!dataValida(_dia)){var _bd=document.querySelector('#modalPessoa .campo[data-f="p_dia"]');_bd.className="campo trabmes bad";_bd.querySelector(".err").textContent="Data inválida (DD/MM/AAAA).";tudoOk=false;}
+    if(!(_valor>0)){var _bv=document.querySelector('#modalPessoa .campo[data-f="p_valor"]');_bv.className="campo trabmes bad";_bv.querySelector(".err").textContent="Informe um valor maior que zero.";tudoOk=false;}
   }
   if(!tudoOk){toast("Há campos pendentes no cadastro.",true);return;}
   var p={nome:$("f_nome").value.replace(/\s+/g," ").trim().toUpperCase(),pj_pf:$("f_pj_pf").value,documento:$("f_documento").value.trim(),telefone:$("f_telefone").value.trim(),cep:mCEP($("f_cep").value),logradouro:$("f_logradouro").value,endereco:$("f_endereco").value.trim(),numero:$("f_numero").value.trim(),bairro:$("f_bairro").value.trim(),cidade:$("f_cidade").value.trim(),uf:$("f_uf").value,data_nascimento:$("f_data_nascimento").value.trim(),tipo_chave_pix:$("f_tipo_chave_pix").value,chave_pix:$("f_chave_pix").value.trim()};
@@ -415,24 +423,37 @@ function salvarPessoa(){
 }
 
 /* ---------- modal lançamento ---------- */
+function renderLancLista(){
+  var ls=lancsByPessoa(state.lancPessoa.id),html="",sub=0;
+  ls.forEach(function(l){
+    sub+=Number(l.valor_pago)||0;
+    html+='<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #eef0ee;border-radius:10px;margin-bottom:6px">'+
+      '<div style="flex:1;font-size:14px"><strong>'+esc(l.dia_trabalhado)+'</strong> — '+fmtMoeda(l.valor_pago)+'</div>'+
+      '<button class="icbtn" data-ledit="'+esc(l.id)+'" title="Carregar para editar">✏️</button>'+
+      '<button class="icbtn del" data-ldel="'+esc(l.id)+'" title="Excluir dia">🗑</button></div>';
+  });
+  if(!ls.length){html='<div class="vazio" style="padding:12px">Nenhum dia lançado neste mês ainda.</div>';}
+  else{html+='<div style="text-align:right;font-size:13px;font-weight:700;margin-top:4px">'+ls.length+' dia'+(ls.length>1?'s':'')+' · '+fmtMoeda(sub)+'</div>';}
+  $("lancLista").innerHTML=html;
+}
 function abrirLanc(p){
-  state.lancPessoa=p;var l=lancByPessoa(p.id);
+  state.lancPessoa=p;
   $("lancNome").textContent=p.nome;
   $("lancComp").textContent="Referente a "+MESES[parseInt(state.comp.split("-")[1],10)-1]+"/"+state.comp.split("-")[0];
-  $("f_dia_trabalhado").value=l?(l.dia_trabalhado||""):"";
-  $("f_valor_pago").value=l?fmtMoeda(l.valor_pago):"";
+  $("f_dia_trabalhado").value="";$("f_valor_pago").value="";
   ["dia_trabalhado","valor_pago"].forEach(function(f){var b=document.querySelector('#modalLanc .campo[data-f="'+f+'"]');b.className="campo";});
-  $("btnRemoverLanc").className="btn btn-d btn-mini"+(l?"":" hide");
+  renderLancLista();
   $("modalLanc").classList.remove("hide");
 }
 function salvarLanc(){
   var dia=$("f_dia_trabalhado").value.trim(),valor=lerMoeda($("f_valor_pago").value),ok=true;
+  ["dia_trabalhado","valor_pago"].forEach(function(f){document.querySelector('#modalLanc .campo[data-f="'+f+'"]').className="campo";});
   if(!dataValida(dia)){document.querySelector('#modalLanc .campo[data-f="dia_trabalhado"]').className="campo bad";document.querySelector('#modalLanc .campo[data-f="dia_trabalhado"] .err').textContent="Data inválida (DD/MM/AAAA).";ok=false;}
   if(!(valor>0)){document.querySelector('#modalLanc .campo[data-f="valor_pago"]').className="campo bad";document.querySelector('#modalLanc .campo[data-f="valor_pago"] .err').textContent="Informe um valor maior que zero.";ok=false;}
   if(!ok)return;
   var l={pessoa_id:state.lancPessoa.id,competencia:state.comp,dia_trabalhado:dia,valor_pago:valor};
   btnLoad("btnSalvarLanc",true);
-  DB.saveLancamento(l).then(function(){$("modalLanc").classList.add("hide");toast("Lançamento salvo!");return carregar();}).catch(function(e){toast("Erro: "+(e.message||e),true);}).then(function(){btnLoad("btnSalvarLanc",false);});
+  DB.saveLancamento(l).then(function(){toast("Dia lançado!");return carregar();}).then(function(){renderLancLista();$("f_dia_trabalhado").value="";$("f_valor_pago").value="";try{$("f_dia_trabalhado").focus();}catch(e){}}).catch(function(e){toast("Erro: "+(e.message||e),true);}).then(function(){btnLoad("btnSalvarLanc",false);});
 }
 
 /* ---------- export ---------- */
@@ -445,7 +466,7 @@ function semAcento(s){return (s==null?"":(""+s)).normalize("NFD").replace(/[̀-�
 function exportar(){
   if(!state.lancamentos.length){toast("Nenhum lançamento neste mês para exportar.",true);return;}
   var linhas=[CABECALHO.map(function(h){return csvCampo(limpar(h));}).join(";")];
-  state.lancamentos.slice().sort(function(a,b){var pa=pessoaById(a.pessoa_id),pb=pessoaById(b.pessoa_id);return ((pa&&pa.nome)||"").localeCompare((pb&&pb.nome)||"");}).forEach(function(l){
+  state.lancamentos.slice().sort(function(a,b){var pa=pessoaById(a.pessoa_id),pb=pessoaById(b.pessoa_id);var na=((pa&&pa.nome)||""),nb=((pb&&pb.nome)||"");if(na!==nb)return na.localeCompare(nb);return diaKey(a.dia_trabalhado)<diaKey(b.dia_trabalhado)?-1:1;}).forEach(function(l){
     var p=pessoaById(l.pessoa_id);if(!p)return;
     var campos=[limpar(p.nome),soDig(p.documento),soDig(p.telefone),soDig(p.cep),limpar(p.logradouro),limpar(p.endereco),limpar(p.numero),limpar(p.bairro),limpar(p.cidade),limpar(p.uf),soDig(p.data_nascimento),soDig(l.dia_trabalhado),valorCentavos(l.valor_pago),limpar(p.chave_pix),limpar(p.tipo_chave_pix),limpar(p.pj_pf)];
     linhas.push(campos.map(csvCampo).join(";"));
@@ -512,7 +533,15 @@ function wire(){
   $("btnExportar").addEventListener("click",exportar);
   $("btnSalvarPessoa").addEventListener("click",salvarPessoa);
   $("btnSalvarLanc").addEventListener("click",salvarLanc);
-  $("btnRemoverLanc").addEventListener("click",function(){if(!confirm("Remover o lançamento deste mês?"))return;DB.deleteLancamento(state.lancPessoa.id,state.comp).then(function(){$("modalLanc").classList.add("hide");toast("Lançamento removido.");return carregar();});});
+  $("lancLista").addEventListener("click",function(ev){
+    var t=ev.target,id,l=null,i;
+    if((id=t.getAttribute("data-ledit"))){
+      for(i=0;i<state.lancamentos.length;i++)if(String(state.lancamentos[i].id)===id){l=state.lancamentos[i];break;}
+      if(l){$("f_dia_trabalhado").value=l.dia_trabalhado||"";$("f_valor_pago").value=fmtMoeda(l.valor_pago);try{$("f_valor_pago").focus();}catch(e){}}
+    } else if((id=t.getAttribute("data-ldel"))){
+      if(confirm("Excluir este dia do mês?"))DB.deleteLancamento(id).then(function(){toast("Dia excluído.");return carregar();}).then(function(){renderLancLista();}).catch(function(e){toast("Erro: "+(e.message||e),true);});
+    }
+  });
   $("f_pj_pf").addEventListener("change",ajustarDoc);
   $("f_documento").addEventListener("input",function(){this.value=docPJ()?mCNPJ(this.value):mCPF(this.value);});
   $("f_telefone").addEventListener("input",function(){this.value=mTel(this.value);});
@@ -559,6 +588,7 @@ function autoteste(){
   eq("soDig CPF",soDig("529.982.247-25"),"52998224725");eq("soDig data",soDig("10/06/2026"),"10062026");
   eq("Limpar tira simbolos",limpar("(TELEFONE, E-MAIL)"),"TELEFONE EMAIL");eq("Limpar acento+espaco",limpar("São Paulo"),"Sao Paulo");
   eq("Limpar ENDERECO",limpar("ENDEREÇO"),"ENDERECO");eq("Limpar cedilha",limpar("Praça"),"Praca");
+  eq("diaKey ordena por data",diaKey("10/06/2026"),"20260610");
   var b="",i;for(i=0;i<T.length;i++)b+='<div class="tl '+(T[i].ok?"p":"f")+'"><div class="s">'+(T[i].ok?"PASS":"FAIL")+'</div><div>'+esc(T[i].n)+(T[i].ok?"":' — '+esc(T[i].d||""))+'</div></div>';
   $("ptB").innerHTML=b;$("ptH").className="h "+(fa===0?"ok":"f");$("ptT").textContent="Autoteste — "+(T.length-fa)+"/"+T.length+" OK"+(fa?" · "+fa+" FALHA(S)":" · tudo certo ✓");$("pt").className="on";
   if(window.console)console.log("[MX RPA online] Autoteste:",(T.length-fa)+"/"+T.length,"ok,",fa,"falhas");
