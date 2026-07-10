@@ -167,6 +167,12 @@ label .ob{color:var(--green);font-weight:800}
       <div class="b v"><span>Total do mês</span><strong id="totValor">R$ 0,00</strong></div>
     </div>
 
+    <div style="position:relative;margin:14px 0 4px">
+      <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--cinza);pointer-events:none">🔎</span>
+      <input id="busca" type="text" inputmode="search" autocomplete="off" placeholder="Buscar autônomo por nome ou CPF..." style="padding-left:38px">
+      <div class="dica" id="buscaInfo" style="margin-top:4px"></div>
+    </div>
+
     <div id="lista"></div>
   </div>
 
@@ -317,7 +323,8 @@ var DB=DEMO?DemoDB:SupaDB;
 /* ====================================================================
    ESTADO + UI
 ==================================================================== */
-var state={profile:null,pessoas:[],lancamentos:[],comp:null,editId:null,lancPessoa:null};
+var state={profile:null,pessoas:[],lancamentos:[],comp:null,editId:null,lancPessoa:null,busca:""};
+function normBusca(s){return semAcento(""+(s||"")).toUpperCase();}
 
 function toast(msg,erro){var t=$("toast");t.textContent=msg;t.className="show"+(erro?" erro":"");clearTimeout(toast._t);toast._t=setTimeout(function(){t.className="";},3200);}
 function compAtual(){var d=new Date();return d.getFullYear()+"-"+pad2(d.getMonth()+1);}
@@ -344,8 +351,14 @@ function carregar(){
 }
 
 function renderLista(){
-  var box=$("lista"),html="",soma=0;
+  var box=$("lista"),html="",soma=0,q=normBusca(state.busca),qd=soDig(state.busca),mostrados=0;
   state.pessoas.forEach(function(p){
+    if(q!==""){
+      var okNome=normBusca(p.nome).indexOf(q)!==-1;
+      var okDoc=(qd!==""&&soDig(p.documento).indexOf(qd)!==-1);
+      if(!okNome&&!okDoc)return;
+    }
+    mostrados++;
     var ls=lancsByPessoa(p.id),qtd=ls.length,sub=0,pj=(p.pj_pf==="Pessoa Jurídica");
     ls.forEach(function(l){sub+=Number(l.valor_pago)||0;});
     var ini=(p.nome||"?").trim().charAt(0).toUpperCase();
@@ -361,11 +374,13 @@ function renderLista(){
       '</div></div>';
   });
   if(!state.pessoas.length)html='<div class="vazio">Nenhum autônomo cadastrado ainda.<br>Clique em <strong>+ Novo autônomo</strong> para começar.</div>';
+  else if(mostrados===0)html='<div class="vazio">Nenhum autônomo encontrado para “'+esc(state.busca)+'”.</div>';
   box.innerHTML=html;
   state.lancamentos.forEach(function(l){soma+=Number(l.valor_pago)||0;});
   $("totPessoas").textContent=state.pessoas.length;
   $("totLanc").textContent=state.lancamentos.length;
   $("totValor").textContent=fmtMoeda(soma);
+  $("buscaInfo").textContent=(q!==""?("mostrando "+mostrados+" de "+state.pessoas.length):"");
 }
 
 /* ---------- modal cadastro ---------- */
@@ -531,6 +546,7 @@ function wire(){
   $("btnSair").addEventListener("click",sair);
   $("selMes").addEventListener("change",carregar);
   $("selAno").addEventListener("change",carregar);
+  $("busca").addEventListener("input",function(){state.busca=this.value;renderLista();});
   $("btnNovo").addEventListener("click",function(){abrirPessoa(null);});
   $("btnExportar").addEventListener("click",exportar);
   $("btnSalvarPessoa").addEventListener("click",salvarPessoa);
@@ -591,6 +607,7 @@ function autoteste(){
   eq("Limpar tira simbolos",limpar("(TELEFONE, E-MAIL)"),"TELEFONE EMAIL");eq("Limpar acento+espaco",limpar("São Paulo"),"Sao Paulo");
   eq("Limpar ENDERECO",limpar("ENDEREÇO"),"ENDERECO");eq("Limpar cedilha",limpar("Praça"),"Praca");
   eq("diaKey ordena por data",diaKey("10/06/2026"),"20260610");
+  eq("normBusca tira acento e sobe caixa",normBusca("João Conceição"),"JOAO CONCEICAO");
   eq("PIX email mantem @ e ponto",limparPixCSV("E-mail","agenor@gmail.com"),"agenor@gmail.com");
   eq("PIX telefone so digitos",limparPixCSV("Telefone","(84) 99951-8187"),"84999518187");
   eq("PIX aleatoria mantem UUID",limparPixCSV("Aleatória","123e4567-e89b-12d3-a456-426614174000"),"123e4567-e89b-12d3-a456-426614174000");
