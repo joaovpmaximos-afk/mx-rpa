@@ -484,7 +484,7 @@ function valorCentavos(n){return String(Math.round((Number(n)||0)*100));}
 function limparPixCSV(tipo,ch){ch=semAcento(ch);if(tipo==="Telefone"||tipo==="CPF"||tipo==="CNPJ")return ch.replace(/\D/g,"");return ch.replace(/[^A-Za-z0-9@._\-]/g,"");}
 function semAcento(s){return (s==null?"":(""+s)).normalize("NFD").replace(/[̀-ͯ]/g,"");}
 /* ====== Constantes do layout do sistema-alvo (SCI) — por cliente (GRUPO SAL) ====== */
-var LAY={ cadastro:{cbo:"3532-30",sefip:"13",esocial:"701",inss:"11"}, servicos:{cod_empresa:"847",iss:"5,00",centro_custo:"21"} };
+var LAY={ cadastro:{cbo:"3532-30",sefip:"13",esocial:"701",inss:""}, servicos:{cod_empresa:"847",iss:"5,00",centro_custo:"21"} };
 function baixarArquivo(conteudo,nome){
   var blob=new Blob([conteudo],{type:"text/csv;charset=utf-8;"}),url=URL.createObjectURL(blob);
   var a=document.createElement("a");a.href=url;a.download=nome;document.body.appendChild(a);a.click();document.body.removeChild(a);
@@ -498,7 +498,7 @@ function exportarCadastro(){
   if(!novos.length){toast("Todos os autônomos já têm código — nada novo para cadastrar.",true);return;}
   novos.sort(function(a,b){return (a.nome||"").localeCompare(b.nome||"");});
   var linhas=novos.map(function(p){
-    var f=[],i;for(i=0;i<44;i++)f.push("");
+    var f=[],i;for(i=0;i<43;i++)f.push("");
     f[0]=soDig(p.documento);
     f[1]=limpar(p.nome);
     f[15]=(p.data_nascimento||"").trim();
