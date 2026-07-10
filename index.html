@@ -158,7 +158,8 @@ label .ob{color:var(--green);font-weight:800}
       <div class="campo"><label>Ano</label><select id="selAno"></select></div>
       <div class="sp"></div>
       <button class="btn btn-p" id="btnNovo">+ Novo autônomo</button>
-      <button class="btn btn-s hide" id="btnExportar">⬇ Exportar CSV</button>
+      <button class="btn btn-s hide" id="btnExpCad">⬇ Exportar cadastro</button>
+      <button class="btn btn-s hide" id="btnExpServ">⬇ Exportar serviços</button>
     </div>
 
     <div class="tot">
@@ -202,6 +203,7 @@ label .ob{color:var(--green);font-weight:800}
         <div class="campo" data-f="tipo_chave_pix"><label>Tipo de chave PIX <span class="ob">*</span></label>
           <select id="f_tipo_chave_pix"><option value="">Selecione...</option><option>Telefone</option><option>E-mail</option><option>CPF</option><option>CNPJ</option><option>Aleatória</option></select><div class="err"></div></div>
         <div class="campo" data-f="chave_pix"><label>Chave PIX <span class="ob">*</span></label><input id="f_chave_pix" placeholder="Selecione o tipo primeiro"><div class="err"></div></div>
+        <div class="campo full" data-f="codigo_autonomo"><label>Código do autônomo <span style="color:var(--cinza);font-weight:400">(sistema SCI — preencha após importar o cadastro; usado no arquivo de serviços)</span></label><input id="f_codigo_autonomo" inputmode="numeric" placeholder="ex.: 1910"><div class="err"></div></div>
         <div class="campo full trabmes" style="border-top:1px solid #eef0ee;padding-top:12px;margin-top:2px">
           <div style="font-family:'Sora',Arial,sans-serif;font-weight:700;font-size:14px;color:var(--green)">Primeiro dia trabalhado — <span id="cadCompLabel"></span></div>
           <div class="dica">Já lança o 1º dia deste autônomo no mês. Os demais dias você adiciona depois em "Dias do mês".</div>
@@ -366,7 +368,7 @@ function renderLista(){
     html+='<div class="pessoa">'+
       '<div class="av">'+esc(ini)+'</div>'+
       '<div class="info"><div class="nome" data-edit="'+p.id+'">'+esc(p.nome)+'</div>'+
-      '<div class="doc">'+esc(p.documento)+' · <span class="tag '+(pj?"pj":"pf")+'">'+(pj?"PJ":"PF")+'</span> '+status+'</div></div>'+
+      '<div class="doc">'+esc(p.documento)+' · <span class="tag '+(pj?"pj":"pf")+'">'+(pj?"PJ":"PF")+'</span> '+status+(p.codigo_autonomo?' · <span style="color:var(--green)">cód '+esc(p.codigo_autonomo)+'</span>':' · <span style="color:var(--amarelo)">sem código</span>')+'</div></div>'+
       '<div class="acts">'+
         '<button class="btn btn-mini '+(qtd?"btn-s":"btn-p")+'" data-lanc="'+p.id+'">'+(qtd?"Dias do mês ("+qtd+")":"Lançar dias")+'</button>'+
         '<button class="icbtn" data-edit="'+p.id+'" title="Editar cadastro">✏️</button>'+
@@ -409,6 +411,7 @@ function abrirPessoa(p){
   state.editId=p?p.id:null;
   $("mpTitulo").textContent=p?"Editar autônomo":"Novo autônomo";
   CAMPOS_P.forEach(function(f){var el=$("f_"+f);if(el)el.value=p?(p[f]||""):"";marcaP(f,true,"");document.querySelector('#modalPessoa .campo[data-f="'+f+'"]').className="campo"+(document.querySelector('#modalPessoa .campo[data-f="'+f+'"]').classList.contains("full")?" full":"");});
+  $("f_codigo_autonomo").value=p?(p.codigo_autonomo||""):"";
   var _pc=(state.comp||compAtual()).split("-");
   $("cadCompLabel").textContent=MESES[parseInt(_pc[1],10)-1]+"/"+_pc[0];
   /* secao "primeiro dia" so aparece em cadastro NOVO; em edicao os dias sao geridos no modal proprio */
@@ -431,7 +434,7 @@ function salvarPessoa(){
     if(!(_valor>0)){var _bv=document.querySelector('#modalPessoa .campo[data-f="p_valor"]');_bv.className="campo trabmes bad";_bv.querySelector(".err").textContent="Informe um valor maior que zero.";tudoOk=false;}
   }
   if(!tudoOk){toast("Há campos pendentes no cadastro.",true);return;}
-  var p={nome:$("f_nome").value.replace(/\s+/g," ").trim().toUpperCase(),pj_pf:$("f_pj_pf").value,documento:$("f_documento").value.trim(),telefone:$("f_telefone").value.trim(),cep:mCEP($("f_cep").value),logradouro:$("f_logradouro").value,endereco:$("f_endereco").value.trim(),numero:$("f_numero").value.trim(),bairro:$("f_bairro").value.trim(),cidade:$("f_cidade").value.trim(),uf:$("f_uf").value,data_nascimento:$("f_data_nascimento").value.trim(),tipo_chave_pix:$("f_tipo_chave_pix").value,chave_pix:$("f_chave_pix").value.trim()};
+  var p={nome:$("f_nome").value.replace(/\s+/g," ").trim().toUpperCase(),pj_pf:$("f_pj_pf").value,documento:$("f_documento").value.trim(),telefone:$("f_telefone").value.trim(),cep:mCEP($("f_cep").value),logradouro:$("f_logradouro").value,endereco:$("f_endereco").value.trim(),numero:$("f_numero").value.trim(),bairro:$("f_bairro").value.trim(),cidade:$("f_cidade").value.trim(),uf:$("f_uf").value,data_nascimento:$("f_data_nascimento").value.trim(),tipo_chave_pix:$("f_tipo_chave_pix").value,chave_pix:$("f_chave_pix").value.trim(),codigo_autonomo:($("f_codigo_autonomo").value.trim()||null)};
   if(state.editId)p.id=state.editId;
   btnLoad("btnSalvarPessoa",true);
   DB.savePessoa(p).then(function(saved){if(_lancObrig){return DB.saveLancamento({pessoa_id:saved.id,competencia:state.comp,dia_trabalhado:_dia,valor_pago:_valor});}}).then(function(){$("modalPessoa").classList.add("hide");toast(state.editId?"Cadastro atualizado!":"Autônomo cadastrado e lançado!");return carregar();}).catch(function(e){toast("Erro ao salvar: "+(e.message||e),true);}).then(function(){btnLoad("btnSalvarPessoa",false);});
@@ -480,20 +483,50 @@ function valorCentavos(n){return String(Math.round((Number(n)||0)*100));}
 /* chave PIX e a UNICA coluna com excecao aos "sem simbolos": sem @/. a chave deixa de ser valida */
 function limparPixCSV(tipo,ch){ch=semAcento(ch);if(tipo==="Telefone"||tipo==="CPF"||tipo==="CNPJ")return ch.replace(/\D/g,"");return ch.replace(/[^A-Za-z0-9@._\-]/g,"");}
 function semAcento(s){return (s==null?"":(""+s)).normalize("NFD").replace(/[̀-ͯ]/g,"");}
-function exportar(){
-  if(!state.lancamentos.length){toast("Nenhum lançamento neste mês para exportar.",true);return;}
-  var linhas=[CABECALHO.map(function(h){return csvCampo(limpar(h));}).join(";")];
-  state.lancamentos.slice().sort(function(a,b){var pa=pessoaById(a.pessoa_id),pb=pessoaById(b.pessoa_id);var na=((pa&&pa.nome)||""),nb=((pb&&pb.nome)||"");if(na!==nb)return na.localeCompare(nb);return diaKey(a.dia_trabalhado)<diaKey(b.dia_trabalhado)?-1:1;}).forEach(function(l){
-    var p=pessoaById(l.pessoa_id);if(!p)return;
-    var campos=[limpar(p.nome),soDig(p.documento),soDig(p.telefone),soDig(p.cep),limpar(p.logradouro),limpar(p.endereco),limpar(p.numero),limpar(p.bairro),limpar(p.cidade),limpar(p.uf),soDig(p.data_nascimento),soDig(l.dia_trabalhado),valorCentavos(l.valor_pago),limparPixCSV(p.tipo_chave_pix,p.chave_pix),limpar(p.tipo_chave_pix),limpar(p.pj_pf)];
-    linhas.push(campos.map(csvCampo).join(";"));
-  });
-  var conteudo=linhas.join("\r\n");
-  var blob=new Blob([conteudo],{type:"text/csv;charset=utf-8;"});
-  var url=URL.createObjectURL(blob),pc=state.comp.split("-"),nome="RPA_"+pc[1]+"_"+pc[0]+".csv";
+/* ====== Constantes do layout do sistema-alvo (SCI) — por cliente (GRUPO SAL) ====== */
+var LAY={ cadastro:{cbo:"3532-30",sefip:"13",esocial:"701",inss:"5"}, servicos:{cod_empresa:"847",iss:"5,00",centro_custo:"21"} };
+function baixarArquivo(conteudo,nome){
+  var blob=new Blob([conteudo],{type:"text/csv;charset=utf-8;"}),url=URL.createObjectURL(blob);
   var a=document.createElement("a");a.href=url;a.download=nome;document.body.appendChild(a);a.click();document.body.removeChild(a);
   setTimeout(function(){URL.revokeObjectURL(url);},1000);
-  toast("CSV gerado: "+nome);
+}
+function ultimoDiaMesDDMMAAAA(comp){var p=comp.split("-"),y=parseInt(p[0],10),m=parseInt(p[1],10),d=new Date(y,m,0).getDate();return (d<10?"0"+d:""+d)+(m<10?"0"+m:""+m)+y;}
+function temCodigo(p){return !!(p&&p.codigo_autonomo&&(""+p.codigo_autonomo).trim());}
+/* Arquivo 1: CADASTRO (43 campos posicionais) — so autonomos SEM codigo (novos no alvo) */
+function exportarCadastro(){
+  var novos=state.pessoas.filter(function(p){return !temCodigo(p);});
+  if(!novos.length){toast("Todos os autônomos já têm código — nada novo para cadastrar.",true);return;}
+  novos.sort(function(a,b){return (a.nome||"").localeCompare(b.nome||"");});
+  var linhas=novos.map(function(p){
+    var f=[],i;for(i=0;i<43;i++)f.push("");
+    f[0]=soDig(p.documento);
+    f[1]=limpar(p.nome);
+    f[15]=(p.data_nascimento||"").trim();
+    f[37]=LAY.cadastro.cbo; f[38]=LAY.cadastro.sefip; f[39]=LAY.cadastro.esocial; f[40]=LAY.cadastro.inss;
+    return f.join(";");
+  });
+  var pc=state.comp.split("-");
+  baixarArquivo(linhas.join("\r\n"),"cadastro_autonomos_"+pc[1]+pc[0]+".csv");
+  toast("Cadastro gerado: "+novos.length+" autônomo(s) sem código.");
+}
+/* Arquivo 2: SERVICOS (8 campos) — 1 linha por pessoa = TOTAL do mes; exige codigo */
+function exportarServicos(){
+  var porPessoa={};
+  state.lancamentos.forEach(function(l){porPessoa[l.pessoa_id]=(porPessoa[l.pessoa_id]||0)+(Number(l.valor_pago)||0);});
+  var ids=Object.keys(porPessoa);
+  if(!ids.length){toast("Nenhum lançamento neste mês para exportar.",true);return;}
+  var comCod=[],semCod=[];
+  ids.forEach(function(id){var p=pessoaById(id);if(!p)return;(temCodigo(p)?comCod:semCod).push(p);});
+  if(!comCod.length){toast("Nenhum autônomo com lançamento tem código — preencha o código para gerar serviços.",true);return;}
+  comCod.sort(function(a,b){return (a.nome||"").localeCompare(b.nome||"");});
+  var data=ultimoDiaMesDDMMAAAA(state.comp),doc=1;
+  var linhas=comCod.map(function(p){
+    return [LAY.servicos.cod_empresa,soDig(p.codigo_autonomo),String(doc++),data,data,LAY.servicos.iss,fmtNumCSV(porPessoa[p.id]),LAY.servicos.centro_custo].join(";");
+  });
+  var pc=state.comp.split("-");
+  baixarArquivo(linhas.join("\r\n"),"servicos_"+pc[1]+pc[0]+".csv");
+  if(semCod.length)toast("Serviços gerado ("+comCod.length+"). ⚠ "+semCod.length+" sem código ficaram de fora.",true);
+  else toast("Serviços gerado: "+comCod.length+" autônomo(s).");
 }
 
 /* ---------- ViaCEP ---------- */
@@ -518,7 +551,8 @@ function entrarApp(){
   var pf=state.profile,esc=(pf.role==="escritorio");
   $("quem").textContent=pf.nome||"";
   $("papelPill").textContent=esc?"Escritório":"Cliente";
-  $("btnExportar").className="btn btn-s"+(esc?"":" hide");
+  $("btnExpCad").className="btn btn-s"+(esc?"":" hide");
+  $("btnExpServ").className="btn btn-s"+(esc?"":" hide");
   $("demoBanner").className="demo-banner"+(DEMO?"":" hide");
   carregar();
 }
@@ -548,7 +582,9 @@ function wire(){
   $("selAno").addEventListener("change",carregar);
   $("busca").addEventListener("input",function(){state.busca=this.value;renderLista();});
   $("btnNovo").addEventListener("click",function(){abrirPessoa(null);});
-  $("btnExportar").addEventListener("click",exportar);
+  $("btnExpCad").addEventListener("click",exportarCadastro);
+  $("btnExpServ").addEventListener("click",exportarServicos);
+  $("f_codigo_autonomo").addEventListener("input",function(){this.value=this.value.replace(/\D/g,"");});
   $("btnSalvarPessoa").addEventListener("click",salvarPessoa);
   $("btnSalvarLanc").addEventListener("click",salvarLanc);
   $("lancLista").addEventListener("click",function(ev){
@@ -608,6 +644,9 @@ function autoteste(){
   eq("Limpar ENDERECO",limpar("ENDEREÇO"),"ENDERECO");eq("Limpar cedilha",limpar("Praça"),"Praca");
   eq("diaKey ordena por data",diaKey("10/06/2026"),"20260610");
   eq("normBusca tira acento e sobe caixa",normBusca("João Conceição"),"JOAO CONCEICAO");
+  eq("Ultimo dia mes 2026-05",ultimoDiaMesDDMMAAAA("2026-05"),"31052026");
+  eq("Ultimo dia mes 2026-06",ultimoDiaMesDDMMAAAA("2026-06"),"30062026");
+  eq("Valor servico com virgula",fmtNumCSV(265.61),"265,61");
   eq("PIX email mantem @ e ponto",limparPixCSV("E-mail","agenor@gmail.com"),"agenor@gmail.com");
   eq("PIX telefone so digitos",limparPixCSV("Telefone","(84) 99951-8187"),"84999518187");
   eq("PIX aleatoria mantem UUID",limparPixCSV("Aleatória","123e4567-e89b-12d3-a456-426614174000"),"123e4567-e89b-12d3-a456-426614174000");
