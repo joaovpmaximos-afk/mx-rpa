@@ -161,6 +161,7 @@ label .ob{color:var(--green);font-weight:800}
       <button class="btn btn-s hide" id="btnExpCad">⬇ Exportar cadastro</button>
       <button class="btn btn-s hide" id="btnExpServ">⬇ Exportar serviços</button>
       <button class="btn btn-p hide" id="btnExpExcel">⬇ Exportar Excel</button>
+      <button class="btn btn-p hide" id="btnExpDDS">🏛 Gerar DDS Natal</button>
     </div>
 
     <div class="tot">
@@ -565,6 +566,65 @@ function exportarExcel(){
   toast("Excel gerado: "+linhas.length+" linha(s) — "+MESES[parseInt(pc[1],10)-1]+"/"+pc[0]+".");
 }
 
+/* ============================================================
+   GERADOR DE DDS NATAL (.DS) — portado do Gerador-DDS-Natal-MAXIMOS.
+   Monta a Declaração Digital de Serviços (ISS Tomados) do GRUPO SAL
+   direto do banco: registros A/C/E/B/O/Z, largura fixa, latin-1.
+   1 prestador = 1 registro E + 1 registro O (total do mês), ISS 5%
+   retido sobre valor majorado (x1,19). C e B são fixos do contribuinte.
+   ============================================================ */
+var DDS_C="CSAL EMPREENDIMENTOS LTDA                               R FRANCISCO GURGEL                 1160             PONTA NEGRA        59090-0500420187600015784                  LUIZ FELIPE SOARES                                     45828721828                                      331065O6";
+var DDS_B="B00014O03882198961            LO 3882/89 art.61                  O servico considera-se prestado e o imposto devido no local do estabelecimento do prestador, exceto nas hipoteses legais.                                                                                                                                      ";
+var DDS_MESES3=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+var DDS_CFG={cmc:"1439022",pref:"NATA",aliq:5,tipo:"N",valorServico:"majorado",
+  tomadorEnd:{log:"RUA FRANCISCO GURGEL",num:"1160",bairro:"PONTA NEGRA",cid:"NATAL",uf:"RN",cep:"59090050"}};
+function ddsRound2(n){return Math.round((n+Number.EPSILON)*100)/100;}
+function ddsNoacc(s){s=semAcento(s);var proib=["'",'"','#',';',':','/','\\','|','*','?','<','>',','],i;for(i=0;i<proib.length;i++)s=s.split(proib[i]).join(' ');return s.toUpperCase();}
+function ddsLjb(s,n){s=(''+(s==null?'':s)).substring(0,n);while(s.length<n)s+=' ';return s;}
+function ddsFa(s,n){s=ddsNoacc(s).replace(/^\s+|\s+$/g,'');return ddsLjb(s,n);}
+function ddsFnum(v,n){var s=''+Math.floor(Math.abs(+v||0));s=s.substring(s.length-n);while(s.length<n)s='0'+s;return s;}
+function ddsFval(reais,n){var c=Math.round(parseFloat(reais||0)*100),s=''+c;while(s.length<n)s='0'+s;return s.substring(s.length-n);}
+function ddsUfDoCep(cep8){var p=parseInt(cep8.substring(0,2),10),F={SP:[1,19],RJ:[20,28],ES:[29,29],MG:[30,39],BA:[40,48],SE:[49,49],PE:[50,56],AL:[57,57],PB:[58,58],RN:[59,59],CE:[60,63],PI:[64,64],MA:[65,65],PA:[66,68],AM:[69,69],DF:[70,73],GO:[72,76],TO:[77,77],MT:[78,78],MS:[79,79],PR:[80,87],SC:[88,89],RS:[90,99]},r=[],uf;for(uf in F)if(F.hasOwnProperty(uf)&&p>=F[uf][0]&&p<=F[uf][1])r.push(uf);return r;}
+function ddsCepBateUf(cep8,uf){if(!uf)return false;uf=(''+uf).trim().toUpperCase();var us=ddsUfDoCep(cep8),i;for(i=0;i<us.length;i++)if(us[i]===uf)return true;return false;}
+function ddsFmtCep8(d){return d.substring(0,5)+'-'+d.substring(5);}
+function ddsCepTom8(fb){var t=soDig(fb);if(t.length>8)t=t.substring(0,8);return t.length===8?t:null;}
+function ddsFcep(c,uf,fb){var d=soDig(c);if(d.length>8)d=d.substring(0,8);if(d.length===8)return ddsFmtCep8(d);if(d.length>0&&d.length<8){var esq=d;while(esq.length<8)esq='0'+esq;var dir=d;while(dir.length<8)dir=dir+'0';var eo=ddsCepBateUf(esq,uf),dro=ddsCepBateUf(dir,uf);if(eo&&!dro)return ddsFmtCep8(esq);if(dro&&!eo)return ddsFmtCep8(dir);if(eo&&dro)return ddsFmtCep8(dir);var t=ddsCepTom8(fb);if(t)return ddsFmtCep8(t);return ddsFmtCep8(dir);}var t2=ddsCepTom8(fb);if(t2)return ddsFmtCep8(t2);return '00000-000';}
+function ddsFnumImovel(num){var n=soDig(num);if(!n)return 'S/N  ';return ddsLjb(n.substring(0,5),5);}
+function ddsDDMMAAAA(d,m,a){return pad2(d)+pad2(m)+a;}
+function ddsMontarE(p,cfg){var fb=cfg&&cfg.tomadorEnd?cfg.tomadorEnd.cep:'';return 'E'+ddsLjb(soDig(p.cpf),20)+ddsLjb('',7)+ddsFa(p.nome,55)+ddsFa(p.log,35)+ddsFnumImovel(p.num)+ddsFa(p.compl,12)+ddsFa(p.bairro,19)+ddsFa(p.cid,25)+ddsFa(p.uf,2)+ddsFcep(p.cep,p.uf,fb)+ddsLjb('',10)+ddsLjb('',10)+ddsLjb('',35)+'N';}
+function ddsMontarO(seq,d,cfg,ud){var fb=cfg&&cfg.tomadorEnd?cfg.tomadorEnd.cep:'';var dt=ddsDDMMAAAA(ud,cfg.mes,cfg.ano);var valor=ddsRound2(d.valor),retido=!!d.retido;var aliq=retido?(d.aliq!=null?d.aliq:cfg.aliq):0;var base=retido?ddsRound2(d.base!=null?d.base:valor):0;var iss=retido?ddsRound2(d.iss!=null?d.iss:base*aliq/100):0;return 'O'+ddsFnum(seq,6)+ddsFa(d.nome,55)+ddsFa(d.log,35)+ddsFnumImovel(d.num)+ddsFa(d.compl,12)+ddsFa(d.bairro,19)+ddsFa(d.cid,25)+ddsFa(d.uf,2)+ddsFcep(d.cep,d.uf,fb)+ddsLjb(soDig(d.cpf),20)+d.tipo+ddsLjb('',2)+ddsLjb('',3)+ddsLjb('',14)+dt+dt+ddsLjb('',7)+ddsFval(valor,11)+ddsFnum(Math.round(aliq*100),4)+ddsFval(base,11)+ddsFval(iss,11)+(retido?'S':'N')+ddsFnum(seq,6)+ddsLjb('',5);}
+function ddsMontarDS(docs,cfg){var CRLF='\r\n',L=[],i,hj=new Date(),ud=new Date(cfg.ano,cfg.mes,0).getDate();
+  L.push('A'+ddsFnum(cfg.cmc,7)+cfg.ano+pad2(cfg.mes)+cfg.tipo+ddsDDMMAAAA(hj.getDate(),hj.getMonth()+1,hj.getFullYear())+'120000'+'1000'+ddsLjb(cfg.pref,4)+'EM'+'C');
+  L.push(cfg.C);
+  var vistos={},prest=[];for(i=0;i<docs.length;i++){var k=soDig(docs[i].cpf);if(!vistos[k]){vistos[k]=true;prest.push(docs[i]);}}
+  for(i=0;i<prest.length;i++)L.push(ddsMontarE(prest[i],cfg));
+  L.push(cfg.B);
+  for(i=0;i<docs.length;i++)L.push(ddsMontarO(i+1,docs[i],cfg,ud));
+  var nO=docs.length,nE=prest.length,total=L.length+1;
+  L.push('Z'+ddsFnum(total,5)+ddsFnum(1,5)+ddsFnum(nE,5)+ddsFnum(1,5)+ddsFnum(0,5)+ddsFnum(0,5)+ddsFnum(0,5)+ddsFnum(0,5)+ddsFnum(nO,5)+ddsFnum(0,5)+ddsFnum(0,5)+ddsFnum(0,5)+ddsFnum(0,5)+ddsFnum(0,5));
+  return L.join(CRLF)+CRLF;}
+function ddsSanitizar(conteudo,cfg){var fb=cfg&&cfg.tomadorEnd?cfg.tomadorEnd.cep:'';var linhas=conteudo.split('\r\n'),re=/^\d{5}-\d{3}$/,i;for(i=0;i<linhas.length;i++){var l=linhas[i],t=l.charAt(0),ini=-1,ufPos=-1;if(t==='C')ini=127;else if(t==='E'){ini=181;ufPos=179;}else if(t==='O'){ini=160;ufPos=158;}if(ini>=0&&l.length>=ini+9){var cep=l.substring(ini,ini+9);if(!re.test(cep)){var uf=ufPos>=0?l.substring(ufPos,ufPos+2).replace(/\s/g,''):'';linhas[i]=l.substring(0,ini)+ddsFcep(cep,uf,fb)+l.substring(ini+9);}}}return linhas.join('\r\n');}
+function ddsBaixar(conteudo,nome){var bytes=new Uint8Array(conteudo.length),i;for(i=0;i<conteudo.length;i++)bytes[i]=conteudo.charCodeAt(i)&0xFF;var blob=new Blob([bytes],{type:'application/octet-stream'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=nome;document.body.appendChild(a);a.click();setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(url);},120);}
+function exportarDDS(){
+  var porPessoa={};
+  state.lancamentos.forEach(function(l){var p=pessoaById(l.pessoa_id);if(!p)return;var v=Number(l.valor_pago)||0;if(!porPessoa[p.id])porPessoa[p.id]={p:p,tvp:0,tmaj:0,qtd:0};porPessoa[p.id].tvp+=v;porPessoa[p.id].tmaj+=ddsRound2(v*1.19);porPessoa[p.id].qtd++;});
+  var ids=Object.keys(porPessoa);
+  if(!ids.length){toast("Nenhum lançamento neste mês para gerar o DDS.",true);return;}
+  var docs=[],fora=[];
+  ids.forEach(function(id){var it=porPessoa[id],p=it.p,cpf=soDig(p.documento);
+    if(cpf.length!==11){fora.push(p.nome);return;}
+    docs.push({tipo:'R',cpf:cpf,nome:p.nome,log:endCompleto(p),num:(p.numero||''),compl:'',bairro:(p.bairro||''),cid:(p.cidade||''),uf:(p.uf||''),cep:soDig(p.cep),
+      valor:ddsRound2(DDS_CFG.valorServico==='majorado'?it.tmaj:it.tvp),retido:true,aliq:DDS_CFG.aliq,base:null,iss:null,dEmi:null});});
+  if(!docs.length){toast("Nenhum prestador com CPF de 11 dígitos para o DDS (a prefeitura não aceita sem CPF).",true);return;}
+  docs.sort(function(a,b){return (a.nome||'')<(b.nome||'')?-1:((a.nome||'')>(b.nome||'')?1:0);});
+  var pc=state.comp.split("-"),cfg={cmc:DDS_CFG.cmc,ano:parseInt(pc[0],10),mes:parseInt(pc[1],10),tipo:DDS_CFG.tipo,pref:DDS_CFG.pref,aliq:DDS_CFG.aliq,valorServico:DDS_CFG.valorServico,C:DDS_C,B:DDS_B,tomadorEnd:DDS_CFG.tomadorEnd};
+  var conteudo=ddsSanitizar(ddsMontarDS(docs,cfg),cfg);
+  ddsBaixar(conteudo,cfg.cmc+DDS_MESES3[cfg.mes-1]+cfg.ano+".DS");
+  var msg="DDS gerado: "+docs.length+" prestador(es) — "+MESES[cfg.mes-1]+"/"+cfg.ano;
+  if(fora.length)msg+=" · ⚠ "+fora.length+" sem CPF de 11 díg. ficaram de fora";
+  toast(msg+".",fora.length>0);
+}
+
 /* ---------- ViaCEP ---------- */
 function buscarCep(){
   var cep=soNum($("f_cep").value);if(cep.length!==8)return;
@@ -590,6 +650,7 @@ function entrarApp(){
   $("btnExpCad").className="btn btn-s"+(esc?"":" hide");
   $("btnExpServ").className="btn btn-s"+(esc?"":" hide");
   $("btnExpExcel").className="btn btn-p"+(esc?"":" hide");
+  $("btnExpDDS").className="btn btn-p"+(esc?"":" hide");
   $("demoBanner").className="demo-banner"+(DEMO?"":" hide");
   carregar();
 }
@@ -622,6 +683,7 @@ function wire(){
   $("btnExpCad").addEventListener("click",exportarCadastro);
   $("btnExpServ").addEventListener("click",exportarServicos);
   $("btnExpExcel").addEventListener("click",exportarExcel);
+  $("btnExpDDS").addEventListener("click",exportarDDS);
   $("f_codigo_autonomo").addEventListener("input",function(){this.value=this.value.replace(/\D/g,"");});
   $("btnSalvarPessoa").addEventListener("click",salvarPessoa);
   $("btnSalvarLanc").addEventListener("click",salvarLanc);
@@ -700,6 +762,22 @@ function autoteste(){
   ok("Excel data vira serial inteiro",dataSerial("05/07/2026")===46208);
   eq("Excel data invalida vira vazio",dataSerial(""),"");
   eq("Excel serial 06/10/1990",dataSerial("06/10/1990"),33152);
+  eq("DDS fval 110,00 em centavos",ddsFval(110,11),"00000011000");
+  eq("DDS fnum sequencial",ddsFnum(1,6),"000001");
+  eq("DDS cep 8 digitos",ddsFcep("59290000","RN","59090050"),"59290-000");
+  eq("DDS cep 7 recupera digito final",ddsFcep("5929000","RN","59090050"),"59290-000");
+  eq("DDS fa upper sem acento",ddsFa("São Gonçalo",11),"SAO GONCALO");
+  eq("DDS noacc remove ; e /",ddsNoacc("A;B/C"),"A B C");
+  (function(){var d={tipo:"R",cpf:"09117928486",nome:"ADRIANA",log:"RUA X",num:"104",compl:"",bairro:"CENTRO",cid:"NATAL",uf:"RN",cep:"59290000",valor:316.24,retido:true,aliq:5,base:null,iss:null,dEmi:null};
+    var cfg={cmc:"1439022",ano:2026,mes:7,tipo:"N",pref:"NATA",aliq:5,valorServico:"majorado",C:DDS_C,B:DDS_B,tomadorEnd:DDS_CFG.tomadorEnd};
+    var ln=ddsMontarDS([d],cfg).split("\r\n");
+    eq("DDS estrutura A/C/E/B/O/Z",ln[0].charAt(0)+ln[1].charAt(0)+ln[2].charAt(0)+ln[3].charAt(0)+ln[4].charAt(0)+ln[5].charAt(0),"ACEBOZ");
+    eq("DDS cabecalho A com CMC+comp",ln[0].substring(0,14),"A1439022202607");
+    eq("DDS registro E cpf pos 2-12",ln[2].substring(1,12),"09117928486");
+    ok("DDS registro O com CEP formatado",/^\d{5}-\d{3}$/.test(ln[4].substring(160,169)));
+    ok("DDS registro O grava o valor",ln[4].indexOf(ddsFval(316.24,11))!==-1);
+    ok("DDS registro O ISS 5% retido",ln[4].indexOf(ddsFval(15.81,11))!==-1);
+  })();
   var b="",i;for(i=0;i<T.length;i++)b+='<div class="tl '+(T[i].ok?"p":"f")+'"><div class="s">'+(T[i].ok?"PASS":"FAIL")+'</div><div>'+esc(T[i].n)+(T[i].ok?"":' — '+esc(T[i].d||""))+'</div></div>';
   $("ptB").innerHTML=b;$("ptH").className="h "+(fa===0?"ok":"f");$("ptT").textContent="Autoteste — "+(T.length-fa)+"/"+T.length+" OK"+(fa?" · "+fa+" FALHA(S)":" · tudo certo ✓");$("pt").className="on";
   if(window.console)console.log("[MX RPA online] Autoteste:",(T.length-fa)+"/"+T.length,"ok,",fa,"falhas");
