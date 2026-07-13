@@ -160,6 +160,7 @@ label .ob{color:var(--green);font-weight:800}
       <button class="btn btn-p" id="btnNovo">+ Novo autônomo</button>
       <button class="btn btn-s hide" id="btnExpCad">⬇ Exportar cadastro</button>
       <button class="btn btn-s hide" id="btnExpServ">⬇ Exportar serviços</button>
+      <button class="btn btn-p hide" id="btnExpExcel">⬇ Exportar Excel</button>
     </div>
 
     <div class="tot">
@@ -247,6 +248,7 @@ label .ob{color:var(--green);font-weight:800}
 <div id="pt"><div class="c"><div class="h" id="ptH"><span id="ptT">Autoteste</span><button class="btn btn-mini btn-s" onclick="document.getElementById('pt').className=''">Fechar</button></div><div class="b" id="ptB"></div></div></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 (function(){
 "use strict";
@@ -529,6 +531,40 @@ function exportarServicos(){
   else toast("Serviços gerado: "+comCod.length+" autônomo(s).");
 }
 
+/* ====== Arquivo 3: EXCEL (.xlsx) no layout CONTABILIDADE RPA — 16 colunas, 1 linha por dia ======
+   Mantém acentos (é planilha de leitura humana, não o arquivo do SCI). CPF/tel/CEP como texto
+   (preserva zero à esquerda), datas dd/mm/aaaa e VALOR como número em moeda R$. */
+function upKeep(s){return (s==null?"":(""+s)).replace(/\s+/g," ").trim().toUpperCase();}
+function endCompleto(p){var lg=(p.logradouro||"").trim(),en=(p.endereco||"").trim();if(lg&&lg!=="Outro"&&en&&en.toLowerCase().indexOf(lg.toLowerCase())!==0)en=lg+" "+en;return upKeep(en);}
+function tipoPixTxt(t){return limpar(t).toUpperCase();}            /* "E-mail"->EMAIL, "Aleatória"->ALEATORIA */
+function pjpfTxt(v){return v==="Pessoa Jurídica"?"JURIDICA":"FISICA";}
+/* Data -> serial do Excel (inteiro, calculado em UTC p/ NAO depender do fuso). "" se inválida. */
+function dataSerial(s){var p=(""+(s||"")).split("/");if(p.length!==3)return "";var dd=parseInt(p[0],10),mm=parseInt(p[1],10),yy=parseInt(p[2],10);if(isNaN(dd)||isNaN(mm)||isNaN(yy))return "";var ms=Date.UTC(yy,mm-1,dd),d=new Date(ms);if(d.getUTCFullYear()!==yy||d.getUTCMonth()!==mm-1||d.getUTCDate()!==dd)return "";return Math.round(ms/86400000)+25569;}
+function linhaExcel(p,l){return [
+  p.nome||"", soDig(p.documento), soDig(p.telefone), soDig(p.cep),
+  upKeep(p.logradouro), endCompleto(p), (p.numero||""), upKeep(p.bairro),
+  upKeep(p.cidade), (p.uf||""), dataSerial(p.data_nascimento), dataSerial(l.dia_trabalhado),
+  (Number(l.valor_pago)||0), limparPixCSV(p.tipo_chave_pix,p.chave_pix),
+  tipoPixTxt(p.tipo_chave_pix), pjpfTxt(p.pj_pf)
+];}
+function exportarExcel(){
+  if(!window.XLSX){toast("O componente de Excel ainda está carregando — tente de novo em alguns segundos.",true);return;}
+  var pes=state.pessoas.slice().sort(function(a,b){return (a.nome||"").localeCompare(b.nome||"");}),linhas=[];
+  pes.forEach(function(p){lancsByPessoa(p.id).forEach(function(l){linhas.push(linhaExcel(p,l));});});
+  if(!linhas.length){toast("Nenhum lançamento neste mês para exportar.",true);return;}
+  var aoa=[CABECALHO].concat(linhas),ws=XLSX.utils.aoa_to_sheet(aoa),r,ref;
+  for(r=1;r<aoa.length;r++){
+    ref=XLSX.utils.encode_cell({r:r,c:12});if(ws[ref]){ws[ref].t="n";ws[ref].z='"R$" #,##0.00';}
+    ref=XLSX.utils.encode_cell({r:r,c:10});if(ws[ref])ws[ref].z="dd/mm/yyyy";
+    ref=XLSX.utils.encode_cell({r:r,c:11});if(ws[ref])ws[ref].z="dd/mm/yyyy";
+  }
+  ws["!cols"]=[{wch:26},{wch:13},{wch:13},{wch:10},{wch:9},{wch:30},{wch:8},{wch:18},{wch:22},{wch:5},{wch:13},{wch:14},{wch:13},{wch:28},{wch:12},{wch:10}];
+  var wb=XLSX.utils.book_new(),pc=state.comp.split("-");
+  XLSX.utils.book_append_sheet(wb,ws,"RPA "+pc[1]+"-"+pc[0]);
+  XLSX.writeFile(wb,"CONTABILIDADE_RPA_"+pc[1]+pc[0]+".xlsx");
+  toast("Excel gerado: "+linhas.length+" linha(s) — "+MESES[parseInt(pc[1],10)-1]+"/"+pc[0]+".");
+}
+
 /* ---------- ViaCEP ---------- */
 function buscarCep(){
   var cep=soNum($("f_cep").value);if(cep.length!==8)return;
@@ -553,6 +589,7 @@ function entrarApp(){
   $("papelPill").textContent=esc?"Escritório":"Cliente";
   $("btnExpCad").className="btn btn-s"+(esc?"":" hide");
   $("btnExpServ").className="btn btn-s"+(esc?"":" hide");
+  $("btnExpExcel").className="btn btn-p"+(esc?"":" hide");
   $("demoBanner").className="demo-banner"+(DEMO?"":" hide");
   carregar();
 }
@@ -584,6 +621,7 @@ function wire(){
   $("btnNovo").addEventListener("click",function(){abrirPessoa(null);});
   $("btnExpCad").addEventListener("click",exportarCadastro);
   $("btnExpServ").addEventListener("click",exportarServicos);
+  $("btnExpExcel").addEventListener("click",exportarExcel);
   $("f_codigo_autonomo").addEventListener("input",function(){this.value=this.value.replace(/\D/g,"");});
   $("btnSalvarPessoa").addEventListener("click",salvarPessoa);
   $("btnSalvarLanc").addEventListener("click",salvarLanc);
@@ -650,6 +688,18 @@ function autoteste(){
   eq("PIX email mantem @ e ponto",limparPixCSV("E-mail","agenor@gmail.com"),"agenor@gmail.com");
   eq("PIX telefone so digitos",limparPixCSV("Telefone","(84) 99951-8187"),"84999518187");
   eq("PIX aleatoria mantem UUID",limparPixCSV("Aleatória","123e4567-e89b-12d3-a456-426614174000"),"123e4567-e89b-12d3-a456-426614174000");
+  eq("Excel PJ->FISICA",pjpfTxt("Pessoa Física"),"FISICA");
+  eq("Excel PJ->JURIDICA",pjpfTxt("Pessoa Jurídica"),"JURIDICA");
+  eq("Excel tipoPix E-mail->EMAIL",tipoPixTxt("E-mail"),"EMAIL");
+  eq("Excel tipoPix Aleatoria->ALEATORIA",tipoPixTxt("Aleatória"),"ALEATORIA");
+  eq("Excel tipoPix Telefone",tipoPixTxt("Telefone"),"TELEFONE");
+  eq("Excel endereco prefixa tipo",endCompleto({logradouro:"Rua",endereco:"das Flores"}),"RUA DAS FLORES");
+  eq("Excel endereco nao duplica tipo",endCompleto({logradouro:"Rua",endereco:"Rua das Flores"}),"RUA DAS FLORES");
+  eq("Excel upKeep mantem acento",upKeep("São Gonçalo do Amarante"),"SÃO GONÇALO DO AMARANTE");
+  eq("Excel CPF texto zero a esquerda",soDig("091.179.284-86"),"09117928486");
+  ok("Excel data vira serial inteiro",dataSerial("05/07/2026")===46208);
+  eq("Excel data invalida vira vazio",dataSerial(""),"");
+  eq("Excel serial 06/10/1990",dataSerial("06/10/1990"),33152);
   var b="",i;for(i=0;i<T.length;i++)b+='<div class="tl '+(T[i].ok?"p":"f")+'"><div class="s">'+(T[i].ok?"PASS":"FAIL")+'</div><div>'+esc(T[i].n)+(T[i].ok?"":' — '+esc(T[i].d||""))+'</div></div>';
   $("ptB").innerHTML=b;$("ptH").className="h "+(fa===0?"ok":"f");$("ptT").textContent="Autoteste — "+(T.length-fa)+"/"+T.length+" OK"+(fa?" · "+fa+" FALHA(S)":" · tudo certo ✓");$("pt").className="on";
   if(window.console)console.log("[MX RPA online] Autoteste:",(T.length-fa)+"/"+T.length,"ok,",fa,"falhas");
